@@ -1,32 +1,49 @@
 import logging
-import os
+import re
 from datetime import datetime
 from urllib.request import urlopen
 
 import numpy as np
 import pandas as pd
-from bs4 import BeautifulSoup
+import progressbar
+from bs4 import BeautifulSoup, Tag
 
-from WebSource import Body
+
+class WebList:
+    def __init__(self, tag: Tag):
+        self.elements = tag
+        self.bullets = [s for s in tag.stripped_strings]
+
+    def logBullets(self):
+        logLine()
+        for i in range(len(self.bullets)):
+            s = f'[{i}] {self.bullets[i]}'
+            logList.info(s)
+        logLine()
 
 
 def webScraping(url: str):
+    domain, home = findDomian(url)
+    processing = f'web scraping from {home}'
+    processed = f'{domain} data collected'
+    length = max(len(processing), len(processed)) + 10
+    processing = processing.center(length)
+    processed = processed.center(length)
+    lineLength = max(fmtHead, length)
+
+    logLoading.info(processing.center(lineLength, '>'))
     html = urlopen(url)
     bs = BeautifulSoup(html.read(), "lxml")
-    return bs.prettify().splitlines()
+    logLoading.info(processed.center(lineLength, '<'))
+    logLine()
+    return bs
 
 
-def fileWebScraping(url: str, path):
-    if (path not in os.listdir()):
-        html = urlopen(url)
-        bs = BeautifulSoup(html.read(), "lxml")
-        with open(path + '.html', 'w', encoding='utf-8') as text:
-            text.write(bs.prettify())
-        with open(path, 'w', encoding='utf-8') as text:
-            text.write(bs.prettify())
-    with open(path, 'r') as text:
-        lines = text.read()
-    return lines.splitlines()
+def findDomian(url: str):
+    link = url[re.search('https://', url).end():]
+    home = link.split('/')[0]
+    domain = home.split('.')[1]
+    return domain, home
 
 
 def genLogger(name: str, formatting: str,
@@ -43,35 +60,79 @@ def genLogger(name: str, formatting: str,
     return logger
 
 
+def logLine():
+    logPara.info(' ')
+
+
 def prologue():
-    outTitle.info('Welcome to ClearAir!')
-    outPara.info('''\
-More than 25 million people in the U.S. have asthma. \
-It is a long-term disease that causes your airways to become swollen and inflamed, \
-making it hard to breathe. There is no cure for asthma, \
-but it can be managed and controlled.''')
+    # Scrap essential info
+    clearAir = 'Welcome to ClearAir'
+    date = datetime.now().strftime(fmtDate)
+    time = datetime.now().strftime(fmtTime)
+    brief = '\t'.join([date, time])
+    epaIntro = ''
+    for para in epa.find('article').find_all('p'):
+        if (len(para.attrs) == 0):
+            epaIntro = para.string.strip()
+            break
+    # Output to Console
+    logTitle.info(clearAir.center(fmtHead))
+    logPara.info(('-' * len(clearAir)).center(fmtHead))
+    logPara.info(brief.center(fmtHead))
+    logLine()
+    logPara.info(epaIntro)
+    logLine()
+
+
+def sectionTrigger():
+    # Scrap essential info
+    triggerListTag = epa.find('article').find('ul')
+    triggers = WebList(triggerListTag)
+    # Output to Console
+    logPara.info('More than 25 million people in the U.S. have asthma. '
+                 'It is a long-term disease that causes your airways to become '
+                 'swollen and inflamed, making it hard to breathe. '
+                 'There is no cure for asthma, but it can be managed and controlled.')
+    triggers.logBullets()
 
 
 if __name__ == "__main__":
 
     # Initialize loggers
-    logging.basicConfig(filename='processing.log',
-                        filemode='w',
-                        level=logging.DEBUG)
-    outTitle = genLogger('main', formatting='\n%(message)s\n')
-    outPara = genLogger('para', formatting='%(message)s\n')
-    outList = genLogger('list', formatting='\t - %(message)s')
+    logging.basicConfig(
+        filename='processing.log', filemode='w', level=logging.DEBUG)
+    logTitle = genLogger(
+        name='title', formatting='\u001B[1;37m%(message)s\u001B[0m')
+    logHeader = genLogger(
+        name='main', formatting='\u001B[47m%(message)s\u001B[0m')
+    logLoading = genLogger(
+        name='loading', formatting='\u001B[3m%(message)s\u001B[0m')
+    logPara = genLogger(
+        name='para', formatting='%(message)s')
+    logList = genLogger(
+        name='list', formatting='\t - %(message)s')
     checker = genLogger(
-        'checker', formatting='\u001B[4;35m%(levelname)s\u001B[0m %(message)s', handler=True)
+        name='checker', formatting='\u001B[1;37m%(levelname)s\u001B[0m %(message)s',
+        handler=True)
+
+    # Format string templates
+    fmtDate = '%a, %b %d, %Y'
+    fmtTime = '%I:%M %p'
+    fmtHead = 80
 
     # Scrape website sources
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
-    epaWholeBody = fileWebScraping(epaURL, 'temp-epa.txt')
-    epa = Body(epaWholeBody, 'EPA')
+    epa = webScraping(epaURL)
+
+    prologue()
+    sectionTrigger()
+
+
+"""
     epaMain = epa.extractLines(tag='article', name='main', flexible=True)[0]
 
     # Prologue % Content
-    prologue()
+    # prologue()
     introAsthma = epaMain.extractLines(tag='p', name='intro')[0]
     introAsthma.outputPara(outPara, prefix='According to EPA, ')
 
@@ -101,3 +162,4 @@ if __name__ == "__main__":
         #            triggerOptions,
         #            triggers.output(),
         #            len(triggers.items))
+"""

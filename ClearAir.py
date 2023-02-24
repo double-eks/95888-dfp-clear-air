@@ -86,6 +86,10 @@ def logLine():
     logPara.info(' ')
 
 
+def sectionFastStats():
+    return
+
+
 if __name__ == "__main__":
     # TODO placeholder
     path = 'placeholder'
@@ -114,3 +118,9 @@ if __name__ == "__main__":
     fmtDate = '%a, %b %d, %Y'
     fmtTime = '%I:%M %p'
     fmtHead = 80
+
+    nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
+    nchc = webScraping(nchcURL)
+    path = '/Volumes/Workaholic/Workspace/Processing/FastStats - Asthma.html'
+
+    sectionFastStats()

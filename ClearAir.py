@@ -48,32 +48,6 @@ def findSubItem(tag: Tag, itemTag: str, itemName: str) -> Tag:
             return subTag
 
 
-def selTrigger(triggersListTag: Tag, triggersList: list, triggerIndex: int):
-    """
-    Generate report for the selected trigger, including About and Actions
-    Args:
-        triggersListTag (Tag): tag of the trigger ul
-        triggersList (list): storing trigger options
-        triggerIndex (int): user response - 1 as the index
-    """
-    header = findSubItem(triggersListTag, 'h2', triggersList[triggerIndex])
-    about, action = header.find_all_next('h3', limit=2)
-    actionDetail = about.find_next('ul')
-    # Report the About part
-    logTitle.info(about.text)
-    for tag in about.find_all_next():
-        if ('h' in tag.name):
-            break
-        if (('p' or 'li') in tag.name):
-            if (isValidText(tag.text)):
-                logPara.info(tag.text.strip())
-    # Report the Action You Can Take part
-    logTitle.info(action.text)
-    for detail in (actionDetail.stripped_strings):
-        if (isValidText(detail)):
-            logBullet.info(detail)
-
-
 def isValidText(text: str):
     text = text.strip()
     if (len(text) <= 1) or (not text[0].isalnum()):
@@ -107,6 +81,32 @@ def logLine():
     logPara.info(' ')
 
 
+def selTrigger(triggersListTag: Tag, triggersList: list, triggerIndex: int):
+    """
+    Generate report for the selected trigger, including About and Actions
+    Args:
+        triggersListTag (Tag): tag of the trigger ul
+        triggersList (list): storing trigger options
+        triggerIndex (int): user response - 1 as the index
+    """
+    header = findSubItem(triggersListTag, 'h2', triggersList[triggerIndex])
+    about, action = header.find_all_next('h3', limit=2)
+    actionDetail = about.find_next('ul')
+    # Report the About part
+    logTitle.info(about.text)
+    for tag in about.find_all_next():
+        if ('h' in tag.name):
+            break
+        if (('p' or 'li') in tag.name):
+            if (isValidText(tag.text)):
+                logPara.info(tag.text.strip())
+    # Report the Action You Can Take part
+    logTitle.info(action.text)
+    for detail in (actionDetail.stripped_strings):
+        if (isValidText(detail)):
+            logBullet.info(detail)
+
+
 def prologue():
     # Scrap essential info
     clearAir = 'Welcome to ClearAir'
@@ -138,8 +138,8 @@ def sectionTrigger():
                  'There is no cure for asthma, but it can be managed and controlled.')
     logOptions(triggersList)
     # Ask for option and output to console
-    # for inputNum in range(len(triggersList)):
-    #     selTrigger(triggersListTag, triggersList, inputNum)
+    for inputNum in range(len(triggersList)):
+        selTrigger(triggersListTag, triggersList, inputNum)
 
 
 if __name__ == "__main__":
@@ -169,10 +169,9 @@ if __name__ == "__main__":
     fmtTime = '%I:%M %p'
     fmtHead = 80
 
-    # Scrape website sources
+    # EPA
     path = '/Volumes/Workaholic/Workspace/Processing/Asthma Triggers_ Gain Control _ US EPA.html'
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
     epa = webScraping(epaURL)
-
     prologue()
     sectionTrigger()

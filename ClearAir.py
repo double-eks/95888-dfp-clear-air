@@ -6,6 +6,7 @@ This is the main structure of web scraping
 import logging
 import re
 from datetime import datetime
+from unicodedata import category
 from urllib.request import urlopen
 
 import numpy as np
@@ -74,6 +75,14 @@ def genLogger(name: str, formatting: str, level: int = logging.DEBUG):
     return logger
 
 
+def logSectionTitle(titleName: str):
+    separator = ('-' * (len(titleName) + 5)).center(fmtHead)
+    title = titleName.upper().center(fmtHead)
+    logSection.info(separator)
+    logSection.info(title)
+    logSection.info(separator)
+
+
 def logOptions(options: list):
     logLine()
     for i in range(len(options)):
@@ -87,7 +96,19 @@ def logLine():
 
 
 def sectionFastStats():
-    return
+    logSectionTitle('asthma faststats © CDC')
+
+    cardTag = 'div'
+    attr = 'class'
+    cardClass = 'card mb-3'
+    cardHeaderClass = 'bg-primary'
+
+    for card in nchc.find_all(cardTag, attrs={attr: cardClass}):
+        header = card.find_next('div')
+        if (cardHeaderClass in header.get(attr)):
+            logTitle.info(header.text.strip())
+            for fact in card.find_all('li'):
+                logBullet.info(fact.text.strip())
 
 
 if __name__ == "__main__":
@@ -102,7 +123,7 @@ if __name__ == "__main__":
     logLoading = genLogger(
         name='loading', formatting='\u001B[3m%(message)s\u001B[0m')
     logSection = genLogger(
-        name='header', formatting='\u001B[47m%(message)s\u001B[0m')
+        name='header', formatting='\u001B[1m%(message)s\u001B[0m')
     logTitle = genLogger(
         name='title', formatting='\n\u001B[4m%(message)s\u001B[0m')
     logOpt = genLogger(
@@ -119,8 +140,8 @@ if __name__ == "__main__":
     fmtTime = '%I:%M %p'
     fmtHead = 80
 
+    path = '/Volumes/Workaholic/Workspace/Processing/FastStats - Asthma.html'
     nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
     nchc = webScraping(nchcURL)
-    path = '/Volumes/Workaholic/Workspace/Processing/FastStats - Asthma.html'
 
     sectionFastStats()

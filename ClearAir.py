@@ -12,8 +12,10 @@ import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
+from console import Console
 
-def webScraping(url: str) -> BeautifulSoup:
+
+def webScraping(url: str, path: str) -> BeautifulSoup:
     # Format the loading messages
     domain, home = findDomian(url)
     processing = f'web scraping from {home}'
@@ -87,8 +89,6 @@ def logLine():
 
 
 if __name__ == "__main__":
-    # TODO placeholder
-    path = 'placeholder'
 
     # Initialize loggers
     logging.basicConfig(
@@ -114,3 +114,5 @@ if __name__ == "__main__":
     fmtDate = '%a, %b %d, %Y'
     fmtTime = '%I:%M %p'
     fmtHead = 80
+
+    console = Console()

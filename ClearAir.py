@@ -6,6 +6,7 @@ This is the main structure of web scraping
 import logging
 import re
 from datetime import datetime
+from unicodedata import category
 from urllib.request import urlopen
 
 import numpy as np
@@ -76,6 +77,14 @@ def genLogger(name: str, formatting: str, level: int = logging.DEBUG):
     return logger
 
 
+def logSectionTitle(titleName: str):
+    separator = ('-' * (len(titleName) + 5)).center(fmtHead)
+    title = titleName.upper().center(fmtHead)
+    logSection.info(separator)
+    logSection.info(title)
+    logSection.info(separator)
+
+
 def logOptions(options: list):
     logLine()
     for i in range(len(options)):
@@ -86,6 +95,22 @@ def logOptions(options: list):
 
 def logLine():
     logPara.info(' ')
+
+
+def sectionFastStats():
+    logSectionTitle('asthma faststats © CDC')
+
+    cardTag = 'div'
+    attr = 'class'
+    cardClass = 'card mb-3'
+    cardHeaderClass = 'bg-primary'
+
+    for card in nchc.find_all(cardTag, attrs={attr: cardClass}):
+        header = card.find_next('div')
+        if (cardHeaderClass in header.get(attr)):
+            logTitle.info(header.text.strip())
+            for fact in card.find_all('li'):
+                logBullet.info(fact.text.strip())
 
 
 def selTrigger(triggersListTag: Tag, triggersList: list, triggerIndex: int):
@@ -159,7 +184,7 @@ if __name__ == "__main__":
     logLoading = genLogger(
         name='loading', formatting='\u001B[3m%(message)s\u001B[0m')
     logSection = genLogger(
-        name='header', formatting='\u001B[47m%(message)s\u001B[0m')
+        name='header', formatting='\u001B[1m%(message)s\u001B[0m')
     logTitle = genLogger(
         name='title', formatting='\n\u001B[4m%(message)s\u001B[0m')
     logOpt = genLogger(
@@ -171,18 +196,23 @@ if __name__ == "__main__":
     checker = genLogger(
         name='checker', formatting='\u001B[1;35m%(levelname)s\u001B[0m %(message)s')
 
-    # Format string templates
+    # Text templates
     fmtDate = '%a, %b %d, %Y'
     fmtTime = '%I:%M %p'
     fmtHead = 80
 
+    # * Initialize console
     console = Console()
 
-    # EPA
+    # Web Scraping
     epaPath = '/Volumes/Workaholic/Workspace/Processing/Asthma Triggers_ Gain Control _ US EPA.html'
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
     epa = webScraping(epaURL, epaPath)
+    nchcPath = '/Volumes/Workaholic/Workspace/Processing/FastStats - Asthma.html'
+    nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
+    nchc = webScraping(nchcURL, nchcPath)
 
     # Deploy
     prologue()
     sectionTrigger()
+    sectionFastStats()

@@ -1,5 +1,4 @@
 import re
-from ctypes import Union
 
 import requests
 from bs4 import BeautifulSoup

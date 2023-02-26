@@ -1,4 +1,5 @@
 import re
+from sys import prefix
 
 import requests
 from bs4 import BeautifulSoup
@@ -10,10 +11,11 @@ class Console:
     fmtHeader = '\u001B[1m{}\u001B[0m'
     fmtTitle = '\n\u001B[4m{}\u001B[0m'
     fmtChoice = '\u001B[1m\u001B[4m{}\u001B[0m'
-    fmtBullet = '  - {}'
-    fmtDate = '%a, %b %d, %Y'
+    fmtBullet = '- {}'
+    fmtDate = '%Y-%m-%d'
     fmtTime = '%I:%M %p'
-    limitHeader = 80
+    fmtDateTime = '%a, %b %d, %Y, %I:%M %p'
+    lineLength = 80
 
     menuKey = f'{fmtChoice.format("H")} for Home Menu'
     quitKey = f'{fmtChoice.format("Q")} to quit ClearAir'
@@ -34,17 +36,15 @@ class Console:
         #     menuNavOn=False, quitButtonOn=False)
         # self.city, self.state = self.lookUpCityState()
         # self.adult = True if (self.adult == 'Y') else False
-        # print(f"User from {self.city.capitalize()}, {self.state.upper()}, "
-        #       "let's have fun with ClearAir!")
         # # TODO >>> Placeholder
         self.adult = True
         self.zip = '15213'
         self.city, self.state = self.lookUpCityState()
-        self.adult = self.prompt(
-            options=['Y', 'N'],
-            answers=['for adult services', 'for child service'],
-        )
         # # TODO <<< Placeholder
+        self.location = ', '.join([self.city.capitalize(),
+                                   self.state.upper(),
+                                   self.zip])
+        print(f"User from {self.location}, let's have fun with ClearAir!")
 
     def lookUpCityState(self):
         xml = '<CityStateLookupRequest USERID="{}"><ZipCode ID="0"><Zip5>{}</Zip5></ZipCode></CityStateLookupRequest>'
@@ -100,26 +100,32 @@ class Console:
 
     def loading(self, message: str, symbol: str):
         load = message.center(len(message) + 10).center(
-            Console.limitHeader, symbol)
+            Console.lineLength, symbol)
         print(Console.fmtLoading.format(load))
 
     def header(self, message: str):
-        separator = ('-' * (len(message) + 5)).center(Console.limitHeader)
-        title = message.center(Console.limitHeader)
+        separator = ('-' * (len(message) + 12)).center(Console.lineLength)
+        title = message.center(Console.lineLength)
         print('')
         print(Console.fmtHeader.format(separator))
         print(Console.fmtHeader.format(title))
         print(Console.fmtHeader.format(separator))
         print('')
 
-    def subHeader(self, message: str):
-        print(message.center(Console.limitHeader), '\n')
+    def subHeader(self, widgets: list[list[str]], separator: str = ','):
+        barTemplate = '{:30s}{:30s}'
+        for widget in widgets:
+            left = widget[0]
+            right = f'{separator} '.join(widget[1:])
+            barHeader = barTemplate.format(left, right)
+            print(barHeader.center(Console.lineLength))
+        print('')
 
     def multiChoice(self, choices: list):
         print('')
         for i in range(len(choices)):
             choice = self.formattedOption(i + 1, choices[i])
-            print('\t' + choice)
+            print(' ' * 10 + choice)
         print('')
 
     def title(self, message: str):
@@ -130,6 +136,26 @@ class Console:
 
     def para(self, message: str):
         print(message)
+
+    def multiLines(self, message: str, indent: int = 0, bullet: str = '-'):
+        words = message.split()
+        lines = []
+        if (indent == 0):
+            prefix = ''
+            currLine = ''
+        else:
+            prefix = ' ' * (indent + 2)
+            currLine = f'  {bullet} '
+
+        for word in words:
+            if (len(currLine) + len(word) <= Console.lineLength):
+                currLine += f'{word} '
+            else:
+                lines.append(currLine)
+                currLine = f'{prefix}{word} '
+        lines.append(currLine)
+
+        return lines
 
     def homepage(self):
         features = [

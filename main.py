@@ -72,38 +72,27 @@ def isValidText(text: str):
         return True
 
 
-def selTrigger(triggersListTag: Tag, triggersList: list, triggerIndex: int):
-    """
-    Generate report for the selected trigger, including About and Actions
-    Args:
-        triggersListTag (Tag): tag of the trigger ul
-        triggersList (list): storing trigger options
-        triggerIndex (int): user response - 1 as the index
-    """
-    header = findSubItem(triggersListTag, 'h2', triggersList[triggerIndex])
-    about, action = header.find_all_next('h3', limit=2)
-    actionDetail = about.find_next('ul')
-    # Report the About part
-    console.para(about.text)
-    for tag in about.find_all_next():
-        if ('h' in tag.name):
-            break
-        if (('p' or 'li') in tag.name):
-            if (isValidText(tag.text)):
-                console.para(tag.text.strip())
-    # Report the Action You Can Take part
-    console.title(action.text)
-    for detail in (actionDetail.stripped_strings):
-        if (isValidText(detail)):
-            console.bullet(detail)
-
-
 def prologue():
-    # Scrap essential info
     clearAir = 'WELCOME to ClearAir for Better Asthma Management'
-    date = datetime.now().strftime(console.fmtDate)
-    time = datetime.now().strftime(console.fmtTime)
-    brief = '\t'.join([date, time])
+    date = datetime.now().strftime(console.fmtDateTime)
+    weatherTag = airNowHome.find('div', attrs={'class': 'weather-value'})
+    weather = weatherTag.text.strip() + ' °F'
+    currAQI = oneLineSummary(airNowHome.find(
+        'div', attrs={'class': 'current-aq-data'}))
+    aqiTemplate = "{} Air {}"  # /day /category AQI
+
+    todayAqi = airNowHome.find('div', attrs={'class': 'today-aq-data'}).find_next(
+        'div', attrs={'class': 'category'}).text
+    tmrAqi = airNowHome.find('div', attrs={'class': 'tomorrow-aq-data'}).find_next(
+        'div', attrs={'class': 'category'}).text
+
+    today = aqiTemplate.format(todayAqi.upper(), 'Today')
+    forecast = aqiTemplate.format(tmrAqi.upper(), 'Tomorrow')
+
+    brief = [console.location, date]
+    aqiBar = ['Current Air Quality', currAQI, weather]
+    marquee = [today, forecast]
+    # Prologue paragraph
     epaIntro = ''
     for para in epa.find('article').find_all('p'):
         if (len(para.attrs) == 0):
@@ -111,8 +100,16 @@ def prologue():
             break
     # Output to Console
     console.header(clearAir)
-    console.subHeader(brief)
+    console.subHeader([brief, aqiBar, marquee])
     console.para(epaIntro)
+
+
+def oneLineSummary(tag: Tag):
+    text = []
+    for s in tag.text.split('\n'):
+        if (s != '') and (not s.isspace()):
+            text.append(s.strip())
+    return ' '.join(text)
 
 
 def triggerPage():
@@ -128,7 +125,33 @@ def triggerPage():
     console.multiChoice(triggersList)
     # Ask for option and output to console
     for inputNum in range(len(triggersList)):
-        selTrigger(triggersListTag, triggersList, inputNum)
+        triggerIntro(triggersListTag, triggersList, inputNum)
+
+
+def triggerIntro(triggersListTag: Tag, triggersList: list, triggerIndex: int):
+    """
+    Generate report for the selected trigger, including About and Actions
+    Args:
+        triggersListTag (Tag): tag of the trigger ul
+        triggersList (list): storing trigger options
+        triggerIndex (int): user response - 1 as the index
+    """
+    header = findSubItem(triggersListTag, 'h2', triggersList[triggerIndex])
+    about, action = header.find_all_next('h3', limit=2)
+    actionDetail = about.find_next('ul')
+    # Report the About part
+    console.title(about.text)
+    for tag in about.find_all_next():
+        if ('h' in tag.name):
+            break
+        if (('p' or 'li') in tag.name):
+            if (isValidText(tag.text)):
+                console.para(tag.text.strip())
+    # Report the Action You Can Take part
+    console.title(action.text)
+    for detail in (actionDetail.stripped_strings):
+        if (isValidText(detail)):
+            console.bullet(detail)
 
 
 def fastStatsPage():
@@ -159,6 +182,13 @@ if __name__ == "__main__":
     nchcPath = '/Volumes/Workaholic/Workspace/Processing/FastStats - Asthma.html'
     nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
     nchc = webScraping(nchcURL, nchcPath)
+    airNowPath = '/Volumes/Workaholic/Workspace/Processing/AirNow.gov.html'
+    airNowGov = 'https://www.airnow.gov/?city={}&state={}&country=USA'
+    airNowHome = webScraping(airNowGov.format(console.city.capitalize(),
+                                              console.state.upper()),
+                             airNowPath)
+
+    # div class="forecast-aq-container"))
 
     # Deploy
     prologue()

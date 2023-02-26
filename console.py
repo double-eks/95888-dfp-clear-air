@@ -3,6 +3,7 @@ from sys import prefix
 
 import requests
 from bs4 import BeautifulSoup
+from pandas import DataFrame
 
 
 class Console:
@@ -40,10 +41,10 @@ class Console:
         self.adult = True
         self.zip = '15213'
         self.city, self.state = self.lookUpCityState()
+        self.city = self.city.capitalize()
+        self.state = self.state.upper()
         # # TODO <<< Placeholder
-        self.location = ', '.join([self.city.capitalize(),
-                                   self.state.upper(),
-                                   self.zip])
+        self.location = ', '.join([self.city, self.state, self.zip])
         print(f"User from {self.location}, let's have fun with ClearAir!")
 
     def lookUpCityState(self):
@@ -134,8 +135,15 @@ class Console:
     def bullet(self, message: str):
         print(self.fmtBullet.format(message))
 
-    def para(self, message: str):
+    def para(self, message: str, newLine: bool = False):
+        if (newLine):
+            print('')
         print(message)
+
+    def table(self, df: DataFrame):
+        print('')
+        print(df.to_markdown(index=False))
+        print('')
 
     def multiLines(self, message: str, indent: int = 0, bullet: str = '-'):
         words = message.split()
@@ -154,11 +162,11 @@ class Console:
                 lines.append(currLine)
                 currLine = f'{prefix}{word} '
         lines.append(currLine)
-
         return lines
 
     def homepage(self):
         features = [
+            'Air Quality Forecast Table'
             'Environmental Asthma Triggers',
             'NCHC Asthma FastStats'
         ]

@@ -1,61 +1,39 @@
-"""
-This is the main structure of web scraping
-"""
 
 
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.request import urlopen
 
+# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
+from airnow import AqiLegend
 from console import Console
 
 
-def genLogger(name: str, formatting: str, level: int = logging.DEBUG):
-    if (name == ''):
-        raise Exception('invalid logger name')
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    ch = logging.StreamHandler()
-    ch.setLevel(level)
-    formatter = logging.Formatter(formatting, datefmt='%H:%M')
-    ch.setFormatter(formatter)
-    logger.addHandler(ch)
-    return logger
-
-
-def webScraping(url: str, path: str) -> BeautifulSoup:
+def webScraping(url: str) -> BeautifulSoup:
 
     print('')
     # Format the loading messages
-    domain, home = findDomian(url)
+    link = url[re.search('https://', url).end():]
+    home = link.split('/')[0]
+    domain = home.split('.')[-2]
     processing = f'web scraping from {home}'
     processed = f'{domain} data collected'
 
     # Start web scraping
     console.loading(processing, '>')
     html = urlopen(url)
-    # bs = BeautifulSoup(html.read(), "lxml")
-    with open(path) as copy:
-        html = copy.read()
-    bs = BeautifulSoup(html, "html.parser")
+    bs = BeautifulSoup(html.read(), "lxml")
+    # with open(path) as copy:
+    #     html = copy.read()
+    # bs = BeautifulSoup(html, "html.parser")
     # Complete web scraping
     console.loading(processed, '<')
     return bs
-
-
-def findDomian(url: str):
-    """
-    Return the domain and home page link of the given url
-    """
-    link = url[re.search('https://', url).end():]
-    home = link.split('/')[0]
-    domain = home.split('.')[1]
-    return domain, home
 
 
 def findSubItem(tag: Tag, itemTag: str, itemName: str) -> Tag:
@@ -72,13 +50,22 @@ def isValidText(text: str):
         return True
 
 
+def summarizeOneLine(tag: Tag):
+    text = []
+    for s in tag.text.split('\n'):
+        s = s.strip()
+        if (s != '') and (not s.isspace()):
+            text.append(s)
+    return text
+
+
 def prologue():
     clearAir = 'WELCOME to ClearAir for Better Asthma Management'
     date = datetime.now().strftime(console.fmtDateTime)
     weatherTag = airNowHome.find('div', attrs={'class': 'weather-value'})
     weather = weatherTag.text.strip() + ' °F'
-    currAQI = oneLineSummary(airNowHome.find(
-        'div', attrs={'class': 'current-aq-data'}))
+    currAQI = ' '.join(summarizeOneLine(airNowHome.find(
+        'div', attrs={'class': 'current-aq-data'})))
     aqiTemplate = "{} Air {}"  # /day /category AQI
 
     todayAqi = airNowHome.find('div', attrs={'class': 'today-aq-data'}).find_next(
@@ -104,12 +91,76 @@ def prologue():
     console.para(epaIntro)
 
 
-def oneLineSummary(tag: Tag):
-    text = []
-    for s in tag.text.split('\n'):
-        if (s != '') and (not s.isspace()):
-            text.append(s.strip())
-    return ' '.join(text)
+def airQualityTable():
+    # !
+    currentList, forecastList = currentAqi(), forecastAqi()
+    forecastDf = pd.DataFrame(forecastList, columns=['Day', 'AQI', 'Level',
+                                                     'Main Pollutant'])
+    forecastDf['Date'] = ['yyyy/mm/dd'] * len(forecastDf)
+    masterDf = forecastDf.reindex(columns=['Date', 'Day', 'Main Pollutant',
+                                           'AQI', 'Level'])
+    masterDf['AQI'][0] = currentList[1]
+    masterDf['Level'][0] = currentList[2]
+    masterDf['Main Pollutant'][0] = currentList[0]
+
+    print(masterDf)
+
+    # for i in range(len(masterDf)):
+    #     currLevel = masterDf['Level'][i]
+    #     currRow = aqiLegend.dictionary[currLevel]
+    #     currColor = aqiLegend.legend.iloc[currRow, -1]
+    #     currDate = datetime.now() + timedelta(days=i)
+    #     masterDf['Date'][i] = currDate.strftime(console.fmtDate)
+    #     masterDf['AQI'][i] = currColor.format(masterDf['AQI'][i])
+    #     masterDf['Level'][i] = currColor.format(currLevel)
+
+    # currReport = f'Current Primary Pollutant ({masterDf.Date[0]})'
+    # currDescr = f'{currentList[0]} in {console.city} has highest AQI, {currentList[1]} ({currentList[2]}).'
+    # console.title(currReport)
+    # console.para(currDescr, True)
+    # console.para(currentList[-1])  # instruction
+    # print('')
+    # console.table(masterDf)
+    # aqiCaution(forecastDf.Level, masterDf.Date)
+
+
+def currentAqi():
+    classAttr = 'col-sm-6 pollutant-custom-col'
+    primaryTag = airNowHome.find('div', attrs={'class': classAttr}).find_next(
+        'div', attrs={'class': classAttr}).find('div')
+    primary = summarizeOneLine(primaryTag)
+    return primary[-4:]
+
+
+def forecastAqi():
+    forecastTag = airNowHome.find('div', attrs={'class': 'col-xs-12 days'})
+    forecastList = []
+    for i in range(6):
+        dayTag = forecastTag.find_next(
+            'div', attrs={'id': f'day-{i}'})
+        daySummary = []
+        for cell in dayTag.find_all('div'):
+            if (cell.text.strip() != ''):
+                daySummary.append(cell.text.strip())
+        if ('Not Available' in daySummary):
+            break
+        forecastList.append(daySummary)
+    return forecastList
+
+
+def aqiCaution(levels, dates):
+    for i in range(len(levels)):
+        level = levels[i]
+        rowInLegend = aqiLegend.dictionary[level]
+        if (rowInLegend > 0):
+            implications = '{}: {}'.format(aqiLegend.legend.columns[-3],
+                                           aqiLegend.legend.iloc[rowInLegend, -3])
+            statement = '{}: {}'.format(aqiLegend.legend.columns[-2],
+                                        aqiLegend.legend.iloc[rowInLegend, -2])
+            console.title(
+                'Air Quality Forecasting Caution ({})'.format(dates[i]))
+            console.para(implications, True)
+            console.para(statement)
 
 
 def triggerPage():
@@ -176,24 +227,23 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
     # Web Scraping
-    epaPath = '/Volumes/Workaholic/Workspace/Processing/Asthma Triggers_ Gain Control _ US EPA.html'
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
-    epa = webScraping(epaURL, epaPath)
-    nchcPath = '/Volumes/Workaholic/Workspace/Processing/FastStats - Asthma.html'
     nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
-    nchc = webScraping(nchcURL, nchcPath)
-    airNowPath = '/Volumes/Workaholic/Workspace/Processing/AirNow.gov.html'
     airNowGov = 'https://www.airnow.gov/?city={}&state={}&country=USA'
-    airNowHome = webScraping(airNowGov.format(console.city.capitalize(),
-                                              console.state.upper()),
-                             airNowPath)
 
-    # div class="forecast-aq-container"))
+    epa = webScraping(epaURL)
+    nchc = webScraping(nchcURL)
+    airNowHome = webScraping(airNowGov.format(console.city, console.state))
+    # legendPage = webScraping('https://aqicn.org/scale/')
+
+    # aqiLegend = AqiLegend(legendPage)
 
     # Deploy
-    prologue()
-    console.homepage()
-    input()
-    triggerPage()
-    input()
-    fastStatsPage()
+    # prologue()
+    # console.homepage()
+    # input()
+    # triggerPage()
+    # input()
+    # fastStatsPage()
+
+    airQualityTable()

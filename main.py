@@ -166,8 +166,8 @@ if __name__ == "__main__":
     # Deploy
     prologue()
     aqiBrief()
-    # console.homepage()
-    # console.checkpoint()
-    # triggerPage()
-    # console.checkpoint()
-    # fastStatsPage()
+    console.homepage()
+    console.checkpoint()
+    triggerPage()
+    console.checkpoint()
+    fastStatsPage()

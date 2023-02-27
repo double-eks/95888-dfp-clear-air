@@ -18,11 +18,11 @@ class Console:
     menuKey = f'{fmtChoice.format("H")} for Home Menu'
     quitKey = f'{fmtChoice.format("Q")} to quit ClearAir'
     separator = ' | '
-    PROMPT = '\u001B[34m(^_^)\u001B[0m\t'
-    ERROR = '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again '
+    _PROMPT = '\u001B[34m(^_^)\u001B[0m\t'
+    _ERROR = '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again '
 
-    PLACEHOLDER = 'https://secure.shippingapis.com/ShippingAPI.dll?API=CityStateLookup&XML='
-    API_ID = '134CARNE2141'
+    _PLACEHOLDER = 'https://secure.shippingapis.com/ShippingAPI.dll?API=CityStateLookup&XML='
+    _API_ID = '134CARNE2141'
 
     def __init__(self) -> None:
         # print('Hello\tthere are 2 intake questions before a go... Please')
@@ -43,11 +43,11 @@ class Console:
         self.state = self.state.upper()
         # # TODO <<< Placeholder
         self.location = ', '.join([self.city, self.state, self.zip])
-        print(f"User from {self.location}, let's have fun with ClearAir!")
+        print(f"User from {self.location}, let's have fun with ClearAir!\n")
 
     def lookUpCityState(self):
         xml = '<CityStateLookupRequest USERID="{}"><ZipCode ID="0"><Zip5>{}</Zip5></ZipCode></CityStateLookupRequest>'
-        url = Console.PLACEHOLDER + xml.format(Console.API_ID, self.zip)
+        url = Console._PLACEHOLDER + xml.format(Console._API_ID, self.zip)
         response = requests.get(url)
         text = BeautifulSoup(response.text, features="xml")
         return text.find('City').text, text.find('State').text
@@ -70,7 +70,7 @@ class Console:
                 optList.append(Console.quitKey)
             menuInfo = Console.separator.join(optList) + '  (case insensitive)'
         print(self.formattedChoice('ENTER') + '\t' + menuInfo)
-        response = input(Console.PROMPT)
+        response = input(Console._PROMPT)
         if (answerRequired):
             while True:
                 if (question != ''):  # Protect short question from home and quit
@@ -87,7 +87,7 @@ class Console:
                         return self.homepage()
                     elif (response.upper() in checker):
                         break
-                response = input(Console.ERROR)
+                response = input(Console._ERROR)
         return response
 
     def checkpoint(self):
@@ -136,10 +136,13 @@ class Console:
     def bullet(self, message: str):
         print(self.fmtBullet.format(message))
 
-    def para(self, message: str, newLine: bool = False):
-        if (newLine):
+    def para(self, message: str,
+             preIndent: bool = False, postIndent: bool = False):
+        if (preIndent):
             print('')
         print(message)
+        if (postIndent):
+            print('')
 
     def table(self, df: DataFrame):
         print('')

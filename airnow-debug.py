@@ -18,13 +18,13 @@ urlBs = BeautifulSoup(html.read(), "lxml")
 urlWeather = urlBs.find('div', attrs={'class': 'weather-value'})
 print(urlWeather)
 
-print('-' * 10)
+# print('-' * 10)
 
-with open(path) as copy:
-    savedHtml = copy.read()
-localBs = BeautifulSoup(savedHtml, "html.parser")
-localWeather = localBs.find('div', attrs={'class': 'weather-value'})
-print(localWeather)
+# with open(path) as copy:
+#     savedHtml = copy.read()
+# localBs = BeautifulSoup(savedHtml, "html.parser")
+# localWeather = localBs.find('div', attrs={'class': 'weather-value'})
+# print(localWeather)
 
 
 '''

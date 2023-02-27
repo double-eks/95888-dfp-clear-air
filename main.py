@@ -12,18 +12,10 @@ from console import Console
 
 
 def webScraping(url: str) -> BeautifulSoup:
-    # Format the loading messages
-    link = url[re.search('https://', url).end():]
-    home = link.split('/')[0]
-    domain = home.split('.')[-2]
-    processing = f'web scraping from {home}'
-    processed = f'{domain} data collected'
-    # Start web scraping
-    console.loading(processing, '>')
+    domain = re.search(r'(?<=https://www.)[^/]*(?=/)', url).group()
+    console.loading(domain)
     html = urlopen(url)
     bs = BeautifulSoup(html.read(), "lxml")
-    # Complete web scraping
-    console.loading(processed, '<')
     return bs
 
 
@@ -164,10 +156,10 @@ if __name__ == "__main__":
     airNowAPI = AirNow()
 
     # Deploy
-    prologue()
-    aqiBrief()
-    console.homepage()
-    console.checkpoint()
-    triggerPage()
-    console.checkpoint()
-    fastStatsPage()
+    # prologue()
+    # aqiBrief()
+    # console.homepage()
+    # console.checkpoint()
+    # triggerPage()
+    # console.checkpoint()
+    # fastStatsPage()

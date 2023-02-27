@@ -8,21 +8,9 @@ from pandas import DataFrame
 
 class Console:
 
-    fmtLoading = '\u001B[3m{}\u001B[0m'
-    fmtHeader = '\u001B[1m{}\u001B[0m'
-    fmtTitle = '\n\u001B[4m{}\u001B[0m'
-    fmtChoice = '\u001B[1m\u001B[4m{}\u001B[0m'
-    fmtBullet = '- {}'
-    lineLength = 80
-
-    menuKey = f'{fmtChoice.format("H")} for Home Menu'
-    quitKey = f'{fmtChoice.format("Q")} to quit ClearAir'
-    separator = ' | '
-    _PROMPT = '\u001B[34m(^_^)\u001B[0m\t'
-    _ERROR = '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again '
-
     _PLACEHOLDER = 'https://secure.shippingapis.com/ShippingAPI.dll?API=CityStateLookup&XML='
     _API_ID = '134CARNE2141'
+    _LINE_LENGTH = 80
 
     def __init__(self) -> None:
         # print('Hello\tthere are 2 intake questions before a go... Please')
@@ -65,12 +53,12 @@ class Console:
                 template = self.formattedOption("\u001B[3moption number")
                 optList = [f'{template} for Browser Options']
             if (menuNavOn):
-                optList.append(Console.menuKey)
+                optList.append(f'{self.formattedChoice("H")} for Home Menu')
             if (quitButtonOn):
-                optList.append(Console.quitKey)
-            menuInfo = Console.separator.join(optList) + '  (case insensitive)'
+                optList.append(f'{self.formattedChoice("Q")} to quit ClearAir')
+            menuInfo = ' | '.join(optList) + '  (case insensitive)'
         print(self.formattedChoice('ENTER') + '\t' + menuInfo)
-        response = input(Console._PROMPT)
+        response = input('\u001B[34m(^_^)\u001B[0m\t')
         if (answerRequired):
             while True:
                 if (question != ''):  # Protect short question from home and quit
@@ -87,33 +75,33 @@ class Console:
                         return self.homepage()
                     elif (response.upper() in checker):
                         break
-                response = input(Console._ERROR)
+                response = input(
+                    '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again ')
         return response
 
     def checkpoint(self):
         self.prompt(question='any keys to continue', answerRequired=False)
 
     def formattedChoice(self, s: str):
-        return Console.fmtChoice.format(s)
+        return '\u001B[1m\u001B[4m{}\u001B[0m'.format(s)
 
     def formattedOption(self, option: str, explanation: str):
         result = self.formattedChoice(option) + ' ' + explanation
         return result
 
-    def loading(self, message: str, symbol: str):
-        return
-        load = message.center(len(message) + 10).center(
-            Console.lineLength, symbol)
-        print(Console.fmtLoading.format(load))
+    def loading(self, message: str):
+        # return
+        widget = f' requesting from {message} '
+        bar = widget.center(Console._LINE_LENGTH, '>')
+        print('\u001B[3m{}\u001B[0m'.format(bar))
 
     def header(self, message: str):
-        separator = ('-' * (len(message) + 12)).center(Console.lineLength)
-        title = message.center(Console.lineLength)
-        print('')
-        print(Console.fmtHeader.format(separator))
-        print(Console.fmtHeader.format(title))
-        print(Console.fmtHeader.format(separator))
-        print('')
+        headerFmt = '\u001B[1m{}\u001B[0m'
+        separator = ('-' * (len(message) + 12)).center(Console._LINE_LENGTH)
+        title = message.center(Console._LINE_LENGTH)
+        print(headerFmt.format('\n' + separator))
+        print(headerFmt.format(title))
+        print(headerFmt.format(separator + '\n'))
 
     def subHeader(self, widgets: list[list[str]], separator: str = ','):
         barTemplate = '{:30s}{:30s}'
@@ -121,7 +109,7 @@ class Console:
             left = widget[0]
             right = f'{separator} '.join(widget[1:])
             barHeader = barTemplate.format(left, right)
-            print(barHeader.center(Console.lineLength))
+            print(barHeader.center(Console._LINE_LENGTH))
         print('')
 
     def multiChoice(self, choices: list):
@@ -132,10 +120,10 @@ class Console:
         print('')
 
     def title(self, message: str):
-        print(self.fmtTitle.format(message))
+        print('\n\u001B[4m{}\u001B[0m'.format(message))
 
     def bullet(self, message: str):
-        print(self.fmtBullet.format(message))
+        print('- {}'.format(message))
 
     def para(self, message: str,
              preIndent: bool = False, postIndent: bool = False):
@@ -161,7 +149,7 @@ class Console:
             currLine = f'  {bullet} '
 
         for word in words:
-            if (len(currLine) + len(word) <= Console.lineLength):
+            if (len(currLine) + len(word) <= Console._LINE_LENGTH):
                 currLine += f'{word} '
             else:
                 lines.append(currLine)

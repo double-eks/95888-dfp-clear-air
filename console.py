@@ -101,6 +101,7 @@ class Console:
         return result
 
     def loading(self, message: str, symbol: str):
+        return
         load = message.center(len(message) + 10).center(
             Console.lineLength, symbol)
         print(Console.fmtLoading.format(load))

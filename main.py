@@ -1,5 +1,3 @@
-
-
 import logging
 import re
 from datetime import timedelta
@@ -62,7 +60,7 @@ def prologue():
     # Output to Console
     console.header('WELCOME to ClearAir for Better Asthma Management')
     console.subHeader([brief])
-    console.para(aqiIntro, postIndent=True)
+    console.para(aqiIntro)
 
 
 def aqiBrief():
@@ -78,12 +76,13 @@ def aqiBrief():
         DateIssue, ReportingArea, StateCode, Latitude, Longitude, ParameterName, AQI, Category, ActionDay,
         Discussion],
     '''
+    console.title(f'Requesting & Loading Quick View of AQI in {console.city}')
     current = airNowAPI.getCurrByZip(console.zip)
-    forecasting = airNowAPI.getForecastByZip(console.zip, console.today)
-    columns = ['Date', 'ParameterName', 'AQI', 'Category']
+    forecasting = airNowAPI.getForecastByZip(console.zip,
+                                             console.today + pd.Timedelta(days=1))
+    columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
     masterTable = pd.concat([current[columns], forecasting[columns]])
-    print(masterTable.to_markdown())
-    return
+    console.table(masterTable)
 
 
 def triggerPage():
@@ -165,8 +164,8 @@ if __name__ == "__main__":
     airNowAPI = AirNow()
 
     # Deploy
-    # prologue()
-    # aqiBrief()
+    prologue()
+    aqiBrief()
     # console.homepage()
     # console.checkpoint()
     # triggerPage()

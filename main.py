@@ -2,15 +2,13 @@
 
 import logging
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 from urllib.request import urlopen
 
-# import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
-from airnow import AqiLegend
 from console import Console
 
 
@@ -60,8 +58,7 @@ def summarizeOneLine(tag: Tag):
 
 
 def prologue():
-    clearAir = 'WELCOME to ClearAir for Better Asthma Management'
-    date = datetime.now().strftime(console.fmtDateTime)
+    '''
     weatherTag = airNowHome.find('div', attrs={'class': 'weather-value'})
     weather = weatherTag.text.strip() + ' °F'
     currAQI = ' '.join(summarizeOneLine(airNowHome.find(
@@ -76,23 +73,25 @@ def prologue():
     today = aqiTemplate.format(todayAqi.upper(), 'Today')
     forecast = aqiTemplate.format(tmrAqi.upper(), 'Tomorrow')
 
-    brief = [console.location, date]
     aqiBar = ['Current Air Quality', currAQI, weather]
     marquee = [today, forecast]
+    '''
     # Prologue paragraph
+    brief = [console.location,
+             console.today.strftime('%a, %b %d, %Y, %I:%M %p')]
     epaIntro = ''
     for para in epa.find('article').find_all('p'):
         if (len(para.attrs) == 0):
             epaIntro = para.string.strip()
             break
     # Output to Console
-    console.header(clearAir)
-    console.subHeader([brief, aqiBar, marquee])
+    console.header('WELCOME to ClearAir for Better Asthma Management')
+    console.subHeader([brief])
     console.para(epaIntro)
 
 
+'''
 def airQualityTable():
-    # !
     currentList, forecastList = currentAqi(), forecastAqi()
     forecastDf = pd.DataFrame(forecastList, columns=['Day', 'AQI', 'Level',
                                                      'Main Pollutant'])
@@ -147,7 +146,6 @@ def forecastAqi():
         forecastList.append(daySummary)
     return forecastList
 
-
 def aqiCaution(levels, dates):
     for i in range(len(levels)):
         level = levels[i]
@@ -161,6 +159,7 @@ def aqiCaution(levels, dates):
                 'Air Quality Forecasting Caution ({})'.format(dates[i]))
             console.para(implications, True)
             console.para(statement)
+'''
 
 
 def triggerPage():
@@ -233,17 +232,16 @@ if __name__ == "__main__":
 
     epa = webScraping(epaURL)
     nchc = webScraping(nchcURL)
-    airNowHome = webScraping(airNowGov.format(console.city, console.state))
-    # legendPage = webScraping('https://aqicn.org/scale/')
+    # airNowHome = webScraping(airNowGov.format(console.city, console.state))
 
+    # Prologue paragraph
+    # legendPage = webScraping('https://aqicn.org/scale/')
     # aqiLegend = AqiLegend(legendPage)
 
     # Deploy
-    # prologue()
-    # console.homepage()
-    # input()
-    # triggerPage()
-    # input()
-    # fastStatsPage()
-
-    airQualityTable()
+    prologue()
+    console.homepage()
+    console.checkpoint()
+    triggerPage()
+    console.checkpoint()
+    fastStatsPage()

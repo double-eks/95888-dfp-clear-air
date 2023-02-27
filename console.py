@@ -1,5 +1,5 @@
 import re
-from sys import prefix
+from datetime import datetime
 
 import requests
 from bs4 import BeautifulSoup
@@ -13,9 +13,6 @@ class Console:
     fmtTitle = '\n\u001B[4m{}\u001B[0m'
     fmtChoice = '\u001B[1m\u001B[4m{}\u001B[0m'
     fmtBullet = '- {}'
-    fmtDate = '%Y-%m-%d'
-    fmtTime = '%I:%M %p'
-    fmtDateTime = '%a, %b %d, %Y, %I:%M %p'
     lineLength = 80
 
     menuKey = f'{fmtChoice.format("H")} for Home Menu'
@@ -37,6 +34,7 @@ class Console:
         #     menuNavOn=False, quitButtonOn=False)
         # self.city, self.state = self.lookUpCityState()
         # self.adult = True if (self.adult == 'Y') else False
+        self.today = datetime.now()
         # # TODO >>> Placeholder
         self.adult = True
         self.zip = '15213'
@@ -54,10 +52,9 @@ class Console:
         text = BeautifulSoup(response.text, features="xml")
         return text.find('City').text, text.find('State').text
 
-    def prompt(self,
-               question: str = '', answerPattern: str = '',
+    def prompt(self, question: str = '', answerPattern: str = '',
                answers: list = [], options: list = [],
-               menuNavOn: bool = True, quitButtonOn: bool = True):
+               menuNavOn: bool = True, quitButtonOn: bool = True, answerRequired: bool = True):
         if (question):
             menuInfo = question
         else:
@@ -74,23 +71,27 @@ class Console:
             menuInfo = Console.separator.join(optList) + '  (case insensitive)'
         print(self.formattedChoice('ENTER') + '\t' + menuInfo)
         response = input(Console.PROMPT)
-        while True:
-            if (question != ''):  # Protect short question from home and quit
-                if (re.search(answerPattern, response) != None):
-                    break
-            else:  # Choose one option
-                if (options):
-                    checker = options
-                else:
-                    checker = [str(i + 1) for i in range(len(answers))]
-                if (response.upper() == 'Q'):
-                    quit()
-                elif (response.upper() == 'H'):
-                    return self.homepage()
-                elif (response.upper() in checker):
-                    break
-            response = input(Console.ERROR)
+        if (answerRequired):
+            while True:
+                if (question != ''):  # Protect short question from home and quit
+                    if (re.search(answerPattern, response) != None):
+                        break
+                else:  # Choose one option
+                    if (options):
+                        checker = options
+                    else:
+                        checker = [str(i + 1) for i in range(len(answers))]
+                    if (response.upper() == 'Q'):
+                        quit()
+                    elif (response.upper() == 'H'):
+                        return self.homepage()
+                    elif (response.upper() in checker):
+                        break
+                response = input(Console.ERROR)
         return response
+
+    def checkpoint(self):
+        self.prompt(question='any keys to continue', answerRequired=False)
 
     def formattedChoice(self, s: str):
         return Console.fmtChoice.format(s)

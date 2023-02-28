@@ -9,3 +9,7 @@ temp.py
 scratch.ipynb
 scratch.py
 *.pyc
+.gitignore
+configs/fontlist-v330.json
+__pycache__/airnow.cpython-39.pyc
+__pycache__/console.cpython-39.pyc

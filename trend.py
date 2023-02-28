@@ -15,8 +15,8 @@ class cdcAPI:
         self.start, self.end = 2011, 2020
         self.titleSuffix = f'in {state} ({self.start}-{self.end})'
         self.xTicks = list(range(self.start, self.end + 1))
+        self.xLim = (self.start - 0.5, self.end + 0.5)
         self.state = state
-        self.dash = '--'
         self.initQuestionDict()
         self.initClauseQuery()
         client = Socrata(domain='chronicdata.cdc.gov',
@@ -66,6 +66,7 @@ class cdcAPI:
             else:
                 typeRowFilter.append(False)
         df = df.loc[typeRowFilter, :]
+        df['Factor'] = types
         df = df.astype({'datavalue': float, 'yearstart': int})
         df = df.rename(columns={'yearstart': 'Year',
                                 'locationabbr': 'State',
@@ -74,37 +75,42 @@ class cdcAPI:
                                 'datavalueunit': 'Unit',
                                 'stratificationcategory1': 'Category',
                                 'stratification1': 'Subgroup'})
-        df['Factor'] = types
         df = df.set_index('Year')
         self.df = df.sort_index()
 
-    # def overallTrend(self):
+    def trend(self):
+        df = filterDf(self.df, 'Category', 'Overall')
+        fig, ax = plt.subplots()
+        ax.grid(True, axis='y', linestyle='dotted')
+        ax.axhline(y=-1, linewidth=1, alpha=0.5,
+                   linestyle='dashed', color='black')
+        ax.axhline(y=1, linewidth=1, alpha=0.5,
+                   linestyle='dashed', color='black', )
+        ax.set_xlabel('Year', fontweight='bold')
+        ax.set_ylabel('Z-score Standardization', fontweight='bold')
+        ax.set_xlim(self.xLim)
+        ax.set_xticks(self.xTicks)
+        ax.fill_between(x=self.xLim, y1=-1, y2=1, alpha=0.1, color='gray')
+        for name, group in df.groupby('Factor'):
+            data = group.Rate
+            zscore = (data - data.mean(numeric_only=True)) / \
+                data.std(numeric_only=True)
+            ax.plot(zscore.index, zscore.values,
+                    label=name, marker='.')
+        ax.legend(title='Standardalized Asthma Indicator', loc='upper center',
+                  title_fontsize=8, fontsize=8, ncol=2)
+        ax.set_title(f'Asthma Trend {self.titleSuffix}', fontweight='bold')
+        plt.show()
     #     questionDict = {'Asthma mortality rate': 'Mortality Rate',
     #                     'Current asthma prevalence among '
     #                     'adults aged >= 18 years': 'Prevalence among Adults'}
     #     overallDf = self.df[self.df.Demography == 'Overall']
 
-    #     fig, ax = plt.subplots()
     #     xTicks = overallDf.index.unique()
-    #     ax.set_title(
-    #         f'Asthma Trend in {self.state} '
-    #         f'({xTicks.values.min()}-{xTicks.values.max()})',
-    #         fontweight='bold')
-    #     ax.set_xlabel('Year', fontweight='bold')
-    #     ax.set_ylabel('Z-score Standardization', fontweight='bold')
-    #     ax.set_xticks(xTicks)
     #     ax.set_ylim(-2, 2)
-    #     ax.grid(True, linestyle=self.dash, alpha=0.5)
     #     self.zScoreAx(ax, xTicks)
 
-    #     for name, group in overallDf.groupby('question'):
-    #         data = group.Value
-    #         zscore = (data - data.mean(numeric_only=True)) / \
-    #             data.std(numeric_only=True)
-    #         ax.plot(zscore.index, zscore.values,
-    #                 label=questionDict[name], marker='.')
-    #     ax.legend(fontsize=10, loc='upper left')
-    #     plt.show()
+    #
 
     def demography(self):
         # df = self.df[self.df.Category != 'Overall']
@@ -117,15 +123,14 @@ class cdcAPI:
                                 ncols=len(subs), figsize=(8, 8))
 
         for row in range(len(factors)):
-            rowName = 'Factor'
-            rowDf = filterDf(df, rowName, factors[row])
+            rowDf = filterDf(df, 'Factor', factors[row])
             yTitle = '{} ({})'.format(rowDf.Type.unique()[0],
                                       rowDf.Unit.unique()[0])
             for col in range(len(subs)):
                 colName = 'Category'
                 colField = subs[col]
                 currAx = axs[row, col]
-                currAx.grid(True, axis='y', linestyle=self.dash, alpha=0.5)
+                currAx.grid(True, axis='y', linestyle='dotted')
                 fill = True if (colField == 'Gender') else False
                 self.drawGroupLines(currAx, colName, colField, rowDf, fill)
                 if (row == 0):
@@ -141,8 +146,9 @@ class cdcAPI:
 
     def drawGroupLines(self, ax: plt.Axes, colName: str, colField: str,
                        rowDf: pd.DataFrame, fill: bool = False):
-        overallDf = rowDf.loc[rowDf[colName] == 'Overall', :]
-        colDf = rowDf.loc[rowDf[colName] == colField, :]
+        overallDf = filterDf(rowDf, colName, 'Overall')
+        colDf = filterDf(rowDf, colName, colField)
+
         subField = 'Subgroup'
         yMax = int(rowDf.Rate.values.max()) + 3
         yTicks = np.linspace(0, yMax, 11).round(1)
@@ -164,9 +170,10 @@ class cdcAPI:
         if (fill):
             ax.fill_between(self.xTicks, yValues[0], yValues[1],
                             color='gray', alpha=0.2)
-
+        ax.set_xlim(self.xLim)
         ax.set_xticks(self.xTicks)
         ax.set_xticklabels(self.xTicks, rotation=45, fontsize=7)
+        ax.set_ylim((0, yMax))
         ax.set_yticks(yTicks)
         ax.set_yticklabels(yTicks, fontsize=7)
         ax.legend(title=colField, loc='lower right', ncol=legendCol,
@@ -181,27 +188,6 @@ class cdcAPI:
         ax.annotate(yMin, xy=(xMin, yMin), xytext=(-6, -10),
                     textcoords='offset points', color=lineColor, fontsize=7)
 
-    def zScoreAx(self, ax, xRange):
-        ax.fill_between(xRange, -1, 1, alpha=0.1, color='gray')
-        ax.axhline(y=-1, linewidth=1, linestyle=self.dash,
-                   color='black', alpha=0.5)
-        ax.axhline(y=1, linewidth=1, linestyle=self.dash,
-                   color='black', alpha=0.5)
-
 
 def filterDf(df: pd.DataFrame, field: str, target: str):
-    selected = df.loc[df[field] == target, :]
-    return selected
-
-
-pa = cdcAPI('CA')
-pa.demography()
-# pa.overallTrend()
-# pa.demography('Race/Ethnicity')
-# df = pa.df
-
-# new = df[df.question == 'Asthma mortality rate']
-# new2 = new[new.Demography == 'Race/Ethnicity']
-
-
-# print(new2.to_markdown())
+    return df.loc[df[field] == target, :]

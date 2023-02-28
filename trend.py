@@ -1,5 +1,7 @@
 import os
 
+from numpy import tile
+
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import matplotlib.pyplot as plt
@@ -59,9 +61,6 @@ def convertResponse(response):
                             'datavalueunit': 'Unit',
                             'stratificationcategory1': 'Demography',
                             'stratification1': 'Group'})
-    factor = ['Mortality Rate' if 'mortality' in df.question[i] else
-              'Adult Prevalence' for i in range(len(df.question))]
-    df.loc[:, 'question'] = factor
     df = df.astype({'Value': float, 'Year': int})
     df = df.set_index('Year')
     df = df.sort_index()
@@ -83,38 +82,70 @@ class cdcAPI:
         self.start, self.end = 2010, 2020
         self.state = state
         self.dash = '--'
-        self.titleSuffix = f'in {self.state} ({self.start}-{self.end})'
 
     def overallTrend(self):
-        ax = self.plotTemplate(title='Asthma Trend', zscore=True,
-                               xLabel='Year', yLabel='Z-score Standardization',
-                               xLim=(self.start, self.end), yLim=(-2, 2),
-                               xTicks=list(range(self.start, self.end + 1)))
+        questionDict = {'Asthma mortality rate': 'Mortality Rate',
+                        'Current asthma prevalence among '
+                        'adults aged >= 18 years': 'Prevalence among Adults'}
         overallDf = self.df[self.df.Demography == 'Overall']
+
+        fig, ax = plt.subplots()
+        xTicks = overallDf.index.unique()
+        ax.set_title(
+            f'Asthma Trend in {self.state} '
+            f'({xTicks.values.min()}-{xTicks.values.max()})',
+            fontweight='bold')
+        ax.set_xlabel('Year', fontweight='bold')
+        ax.set_ylabel('Z-score Standardization', fontweight='bold')
+        ax.set_xticks(xTicks)
+        ax.set_ylim(-2, 2)
+        ax.grid(True, linestyle=self.dash, alpha=0.5)
+        self.zScoreAx(ax, xTicks)
+
         for name, group in overallDf.groupby('question'):
             data = group.Value
             zscore = (data - data.mean(numeric_only=True)) / \
                 data.std(numeric_only=True)
-            ax.plot(zscore.index, zscore.values, label=name, marker='o')
-        ax.legend(fontsize=10, ncol=2, loc='upper left')
+            ax.plot(zscore.index, zscore.values,
+                    label=questionDict[name], marker='o')
+        ax.legend(fontsize=10, loc='upper left')
         plt.show()
 
-    def plotTemplate(self, title: str, xLabel: str, yLabel: str,
-                     xLim, yLim, xTicks, grid: bool = True, zscore: bool = False):
+    def demography(self, identity: str):
+        questionDict = {
+            'Asthma mortality rate': 'Asthma Mortality Rate',
+            'Current asthma prevalence among adults aged >= '
+            '18 years': 'Prevalence of Adults with Current Asthma'}
+        subGroup = self.df[self.df.Demography == identity]
+        subDf = subGroup[subGroup.question != 'Asthma mortality rate']
+        xTicks = subDf.index.unique()
+
         fig, ax = plt.subplots()
-        ax.set_title(f'{title} {self.titleSuffix}', fontweight='bold')
-        ax.set_xlabel(xLabel, fontweight='bold')
-        ax.set_ylabel(yLabel, fontweight='bold')
-        ax.set_xlim(xLim)
-        ax.set_ylim(yLim)
+        ax.set_title(f'Trend of Adult Asthma in {self.state}\n'
+                     f'by {identity} '
+                     f'({xTicks.values.min()}-{xTicks.values.max()})',
+                     fontweight='bold')
+        ax.set_xlabel('Year',
+                      fontweight='bold')
+        ax.set_ylabel('Prevalence of Adults with Current Asthma (%)',
+                      fontweight='bold')
         ax.set_xticks(xTicks)
-        if (grid):
-            ax.grid(True, linestyle=self.dash, alpha=0.5)
-        if (zscore):
-            self.zScoreAx(ax, xTicks)
-        return ax
+        ax.grid(True, linestyle=self.dash, alpha=0.5)
+
+        for name, group in subDf.groupby('Group'):
+            ax.plot(group.index, group.Value, label=name, marker='o')
+            ax.legend(title=identity, fontsize=8, loc='upper left')
+        plt.show()
 
     def zScoreAx(self, ax, xRange):
         ax.fill_between(xRange, -1, 1, alpha=0.1, color='gray')
-        ax.axhline(y=-1, linewidth=1, linestyle=self.dash, alpha=0.5)
-        ax.axhline(y=1, linewidth=1, linestyle=self.dash, alpha=0.5)
+        ax.axhline(y=-1, linewidth=1, linestyle=self.dash,
+                   color='black', alpha=0.5)
+        ax.axhline(y=1, linewidth=1, linestyle=self.dash,
+                   color='black', alpha=0.5)
+
+
+pa = cdcAPI('PA')
+pa.overallTrend()
+pa.demography('Gender')
+pa.demography('Race/Ethnicity')

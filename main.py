@@ -71,9 +71,7 @@ def introPage():
 
 def asthmaPage():
     console.para('Air quality is signifcant for asthma management. '
-                 "Let's take a look at the asthma trend first. "
-                 '\nPlease note that there will be a brief report for plot '
-                 'interpration at the bottom of terminal. Check it out...')
+                 "Let's take a look at the asthma trend first.")
     console.loading(f'CDC API for asthma indicators in {console.state}',
                     newLine=True)
     console.checkpoint()

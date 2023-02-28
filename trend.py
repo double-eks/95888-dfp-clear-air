@@ -1,6 +1,6 @@
 import os
 
-from numpy import tile
+import numpy as np
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
@@ -33,8 +33,9 @@ def genFieldQuery():
 def genClauseQuery(state: str):
     location = f'(locationabbr = "{state.upper()}")'
     value = '(datavalue IS NOT NULL)'
-    typeClause = genTextWhereClause(
-        'datavaluetype', 'OR', 'Age-adjusted Rate', 'Age-adjusted Prevalence')
+    # typeClause = genTextWhereClause(
+    #     'datavaluetype', 'OR', 'Age-adjusted Rate', 'Age-adjusted Prevalence')
+    typeClause = '(datavaluetype = "Number")'
     questionClause = genTextWhereClause(
         'question', 'OR', 'Asthma mortality rate',
         'Current asthma prevalence among adults aged >= 18 years')
@@ -82,6 +83,7 @@ class cdcAPI:
         self.start, self.end = 2010, 2020
         self.state = state
         self.dash = '--'
+        print(len(self.df))
 
     def overallTrend(self):
         questionDict = {'Asthma mortality rate': 'Mortality Rate',
@@ -107,35 +109,55 @@ class cdcAPI:
             zscore = (data - data.mean(numeric_only=True)) / \
                 data.std(numeric_only=True)
             ax.plot(zscore.index, zscore.values,
-                    label=questionDict[name], marker='o')
+                    label=questionDict[name], marker='.')
         ax.legend(fontsize=10, loc='upper left')
         plt.show()
 
-    def demography(self, identity: str):
+    def demography(self):
         questionDict = {
             'Asthma mortality rate': 'Asthma Mortality Rate',
             'Current asthma prevalence among adults aged >= '
-            '18 years': 'Prevalence of Adults with Current Asthma'}
-        subGroup = self.df[self.df.Demography == identity]
-        subDf = subGroup[subGroup.question != 'Asthma mortality rate']
-        xTicks = subDf.index.unique()
+            '18 years': 'Prevalence of Adults with Current Asthma (%)'}
+        groupsDf = self.df[self.df.Demography != 'Overall']
+        questions = groupsDf.question.unique()
+        groups = groupsDf.Demography.unique()
+        xTicks = groupsDf.index.unique()
+        yTicks = np.linspace(0, 35, 11)
 
-        fig, ax = plt.subplots()
-        ax.set_title(f'Trend of Adult Asthma in {self.state}\n'
-                     f'by {identity} '
-                     f'({xTicks.values.min()}-{xTicks.values.max()})',
+        fig, axs = plt.subplots(nrows=len(questions),
+                                ncols=len(groups), figsize=(8, 8))
+
+        for row in range(len(questions)):
+            rawQuestion = questions[row]
+            questionDf = groupsDf.loc[groupsDf.question == rawQuestion, :]
+            for col in range(len(groups)):
+                currAx = axs[row, col]
+                currGroup = groups[col]
+                subDf = questionDf.loc[questionDf.Demography == currGroup, :]
+                currQuestion = questionDict[rawQuestion]
+                currAx.grid(True, linestyle=self.dash, alpha=0.5)
+                print(currQuestion, currGroup)
+                print(subDf.Group.unique())
+                print('\n\n')
+                for name, group in subDf.groupby('Group'):
+                    currAx.plot(group.index, group.Value,
+                                label=name, marker='.')
+                currAx.legend(title=currGroup, loc='upper left', fontsize=7)
+                currAx.set_xticks(xTicks)
+                currAx.set_xticklabels(xTicks, rotation=45, fontsize=9)
+                currAx.set_yticks(yTicks)
+                currAx.set_yticklabels(yTicks, fontsize=9)
+                if (col == 0):
+                    currAx.set_ylabel(currQuestion, fontweight='bold')
+                if (row == 1):
+                    currAx.set_xlabel(subDf.index.name,
+                                      fontweight='bold')
+
+        fig.suptitle('Demographic Patterns of Adults with Current Asthma '
+                     f'({xTicks[0]}-{xTicks[-1]})',
                      fontweight='bold')
-        ax.set_xlabel('Year',
-                      fontweight='bold')
-        ax.set_ylabel('Prevalence of Adults with Current Asthma (%)',
-                      fontweight='bold')
-        ax.set_xticks(xTicks)
-        ax.grid(True, linestyle=self.dash, alpha=0.5)
-
-        for name, group in subDf.groupby('Group'):
-            ax.plot(group.index, group.Value, label=name, marker='o')
-            ax.legend(title=identity, fontsize=8, loc='upper left')
-        plt.show()
+        fig.tight_layout()
+        # plt.show()
 
     def zScoreAx(self, ax, xRange):
         ax.fill_between(xRange, -1, 1, alpha=0.1, color='gray')
@@ -146,6 +168,13 @@ class cdcAPI:
 
 
 pa = cdcAPI('PA')
-pa.overallTrend()
-pa.demography('Gender')
-pa.demography('Race/Ethnicity')
+# pa.overallTrend()
+pa.demography()
+# pa.demography('Race/Ethnicity')
+# df = pa.df
+
+# new = df[df.question == 'Asthma mortality rate']
+# new2 = new[new.Demography == 'Race/Ethnicity']
+
+
+# print(new2.to_markdown())

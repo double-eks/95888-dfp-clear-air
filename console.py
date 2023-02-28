@@ -79,8 +79,11 @@ class Console:
                     '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again ')
         return response
 
-    def checkpoint(self):
-        self.prompt(question='any keys to continue', answerRequired=False)
+    def checkpoint(self, message: str = 'Data loaded...'):
+        template = 'Press any keys to continue'
+        if (message != ''):
+            template = f'{message} {template}'
+        self.prompt(question=template, answerRequired=False)
 
     def formattedChoice(self, s: str):
         return '\u001B[1m\u001B[4m{}\u001B[0m'.format(s)
@@ -89,11 +92,18 @@ class Console:
         result = self.formattedChoice(option) + ' ' + explanation
         return result
 
-    def loading(self, message: str):
-        # return
+    def loading(self, message: str, newLine: bool = False):
         widget = f' requesting from {message} '
         bar = widget.center(Console._LINE_LENGTH, '>')
-        print('\u001B[3m{}\u001B[0m'.format(bar))
+        fmtBar = '\u001B[3;30m{}\u001B[0m'.format(bar)
+        if (newLine):
+            print('')
+        print(fmtBar)
+
+    def requesting(self, message: str):
+        message = f'>>>>>\t{message} '
+        message = message.ljust(Console._LINE_LENGTH, '>')
+        print(Console._PROGRESS_BAR.format(message))
 
     def header(self, message: str):
         headerFmt = '\u001B[1m{}\u001B[0m'

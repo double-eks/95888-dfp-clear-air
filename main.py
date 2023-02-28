@@ -1,14 +1,21 @@
+
 import logging
+import os
 import re
 from datetime import timedelta
 from urllib.request import urlopen
 
+os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
+from sodapy import Socrata
 
 from airnow import AirNow
 from console import Console
+from trend import cdcAPI
 
 
 def webScraping(url: str) -> BeautifulSoup:
@@ -42,39 +49,35 @@ def summarizeOneLine(tag: Tag):
     return text
 
 
-def prologue():
-    # Prologue paragraph
+def introPage():
     brief = [console.location,
              console.today.strftime('%a, %b %d, %Y, %I:%M %p')]
     aqiIntroTag = webScraping(airNowGov).find(
         'div', attrs={'class': 'container related-announcements-container pull-left'})
     aqiIntro = aqiIntroTag.text.strip()
-    # Output to Console
     console.header('WELCOME to ClearAir for Better Asthma Management')
     console.subHeader([brief])
     console.para(aqiIntro)
-
-
-def aqiBrief():
-    '''
-    Current AQI Columns:
-        Date, ParameterName, AQI, Category (dict),
-        HourObserved, LocalTimeZone, ReportingArea, StateCode, Latitude, Longitude
-    Historical AQI Columns:
-        Date, ParameterName, AQI, Category (dict),
-        HourObserved, LocalTimeZone, ReportingArea, StateCode, Latitude, Longitude
-    Forecasting AQI Columns:
-        Date, ParameterName, AQI, Category (dict), ActionDay
-        DateIssue, ReportingArea, StateCode, Latitude, Longitude, ParameterName, AQI, Category, ActionDay,
-        Discussion],
-    '''
-    console.title(f'Requesting & Loading Quick View of AQI in {console.city}')
+    console.loading(f'AirNow API for a quick view of AQI in {console.city}',
+                    newLine=True)
     current = airNowAPI.getCurrByZip(console.zip)
     forecasting = airNowAPI.getForecastByZip(console.zip,
                                              console.today + pd.Timedelta(days=1))
     columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
     masterTable = pd.concat([current[columns], forecasting[columns]])
+    console.checkpoint()
     console.table(masterTable)
+
+
+def asthmaPage():
+    console.para('Air quality is signifcant for asthma management. '
+                 "Let's take a look at the asthma trend first. "
+                 '\nPlease note that there will be a brief report for plot '
+                 'interpration at the bottom of terminal. Check it out...')
+    console.loading(f'CDC API for asthma indicators in {console.state}',
+                    newLine=True)
+    console.checkpoint()
+    asthmaAPI.overallTrend()
 
 
 def triggerPage():
@@ -154,12 +157,13 @@ if __name__ == "__main__":
     epa = webScraping(epaURL)
     nchc = webScraping(nchcURL)
     airNowAPI = AirNow()
+    asthmaAPI = cdcAPI(console.state)
 
     # Deploy
-    # prologue()
-    # aqiBrief()
-    # console.homepage()
-    # console.checkpoint()
+    introPage()
+    asthmaPage()
+    console.homepage()
+    # console.checkpoint
     # triggerPage()
     # console.checkpoint()
     # fastStatsPage()

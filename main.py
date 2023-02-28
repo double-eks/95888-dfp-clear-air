@@ -8,14 +8,12 @@ from urllib.request import urlopen
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
-from sodapy import Socrata
 
 from airnow import AirNow
+from asthmaindicator import cdcAPI
 from console import Console
-from trend import cdcAPI
 
 
 def webScraping(url: str) -> BeautifulSoup:
@@ -75,7 +73,9 @@ def asthmaPage():
     console.loading(f'CDC API for asthma indicators in {console.state}',
                     newLine=True)
     console.checkpoint()
-    asthmaAPI.overallTrend()
+    asthmaAPI.trend()
+    console.checkpoint('')
+    asthmaAPI.demography()
 
 
 def triggerPage():
@@ -158,10 +158,11 @@ if __name__ == "__main__":
     asthmaAPI = cdcAPI(console.state)
 
     # Deploy
-    introPage()
-    asthmaPage()
-    console.homepage()
-    # console.checkpoint
+    # introPage()
+    # asthmaPage()
+    # console.homepage()
+    # console.checkpoint('')
     # triggerPage()
-    # console.checkpoint()
+    # console.checkpoint('')
     # fastStatsPage()
+    plt.close('all')

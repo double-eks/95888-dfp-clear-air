@@ -86,10 +86,6 @@ class Console:
         fmtBar = '\u001B[3;30m{}\u001B[0m'.format(bar)
         print(fmtBar)
 
-    def requesting(self, message: str):
-        print('')
-        self.loading(message)
-
     def requested(self):
         self.checkpoint('Data loaded...')
 

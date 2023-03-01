@@ -59,37 +59,36 @@ def introPage():
     console.header('WELCOME to ClearAir for Better Asthma Management')
     console.header(brief, sub=True)
     console.para(aqiIntro, preIndent=True)
-    console.requesting(f'AirNow API for a quick view of AQI in {console.city}')
+    # console.requesting(f'AirNow API for a quick view of AQI in {console.city}')
     current = airNowAPI.getCurrByZip(console.zip)
     forecasting = airNowAPI.getForecastByZip(console.zip,
                                              console.today + pd.Timedelta(days=1))
     columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
     masterTable = pd.concat([current[columns], forecasting[columns]])
-    console.requested()
+    # console.requested()
     console.table(masterTable)
 
 
 def aqiVizPage():
     console.header('AQI Visualization')
-    # console.requesting(f'EPA Air Quality System')
-    yrDfs = aqsAPI.request(console.city, console.state)
-    # console.requested()
-    aqiTracker(yrDfs)
+
+    aqiTracker()
     # ax.set_xlabel('Dates')
     # aqsAPI.drawTrendPlot(ax, yrDf)
     # homepage()
 
 
-def aqiTracker(df: pd.DataFrame):
+def aqiTracker():
     fig = plt.figure(tight_layout=True)
-    fig.set_size_inches(10, 5)
-    gs = gridspec.GridSpec(2, 2)
+    fig.set_size_inches(8, 8)
+    gs = gridspec.GridSpec(3, 3)
 
     dailyAqiAx = fig.add_subplot(gs[0, :])
-    levelBarAx = fig.add_subplot(gs[1, 0])
-    monthBarAx = fig.add_subplot(gs[1, 1])
+    cumDayAx = fig.add_subplot(gs[1, 0])
+    pollutantAx = fig.add_subplot(gs[2, 1])
+    tileAx = fig.add_subplot(gs[2, 2])
 
-    dailyAqPlot(df, dailyAqiAx)
+    dailyAqPlot(df, dailyAqiAx, cumDayAx)
 
     # levelBarAx(df, levelBarAx)
     # monthBarAx(df, monthBarAx)
@@ -97,7 +96,7 @@ def aqiTracker(df: pd.DataFrame):
     return
 
 
-def dailyAqPlot(dfs: list[pd.DataFrame], ax: Axes):
+def dailyAqPlot(dfs: list[pd.DataFrame], ax1: Axes, ax2: Axes):
     latestDf = dfs[-1]
     halfDF = pd.concat(dfs[(len(dfs) // 2):])
     mergedDF = pd.concat(dfs)
@@ -127,6 +126,8 @@ def monthCumBar(df: pd.DataFrame, ax: Axes):
     return
 
 
+'''
+
 def asthmaStatsPage():
     console.header('Asthma Statistics © CDC')
     console.header('Asthma FastFacts ', sub=True)
@@ -139,6 +140,7 @@ def asthmaStatsPage():
     console.checkpoint('')
     asthmaAPI.demography()
     homepage()
+
 
 
 def fastFactsPage():
@@ -206,7 +208,6 @@ def triggerReport(triggersListTag: Tag, triggersList: list, triggerIndex: int):
     console.separator()
     navTrigger()
 
-
 def homepage(new: bool = False):
     features = [
         'AQI ?????',
@@ -224,16 +225,21 @@ def homepage(new: bool = False):
     elif (response == '3'):
         asthmaTriggerPage()
 
+'''
 
 if __name__ == "__main__":
 
-    # * Initialize console
     console = Console()
     logging.basicConfig(level=logging.INFO)
+    airNowAPI = AirNow()
+    console.loading('EPA Air Quality System')
+    asthmaAPI = cdcAPI(console.state)
+    console.loading('EPA Air Quality System')
+    aqsAPI = EpaAqs(console.city, console.state)
+    aqsData = aqsAPI.dfList
 
     # ! Placeholder
-    aqsAPI = EpaAqs()
-    aqiVizPage()
+    # aqiVizPage()
     plt.close('all')
 
 
@@ -241,13 +247,10 @@ if __name__ == "__main__":
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
     nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
     airNowGov = 'https://www.airnow.gov/aqi/'
-
     epa = webScraping(epaURL)
     nchc = webScraping(nchcURL)
-    airNowAPI = AirNow()
-    asthmaAPI = cdcAPI(console.state)
-
-    # introPage()
-    # homepage(new=True)
-    # asthmaStatsPage()
 '''
+
+# introPage()
+# homepage(new=True)
+# asthmaStatsPage()

@@ -7,6 +7,7 @@ import zipfile
 from datetime import datetime
 
 import pandas as pd
+import progressbar
 import requests
 from matplotlib.axes import Axes
 
@@ -105,14 +106,15 @@ class AirNow():
 
 
 class EpaAqs():
-    def __init__(self) -> None:
-        self.url = 'https://aqs.epa.gov/aqsweb/airdata/{}_aqi_by_cbsa_{}.zip'
-        self.aqiDict = self.initLegendDf()
+    def __init__(self, city: str, state: str) -> None:
+        self.url = 'https://aqs.epa.gov/aqsweb/airdata/daily_aqi_by_cbsa_{}.zip'
+        self.initRequest(city, state)
+        self.initLegendDf()
 
-    def request(self, city: str, state: str, stats: str = 'daily'):
+    def initRequest(self, city: str, state: str):
         dfs = []
-        for yr in range(2010, 2022):
-            url = self.url.format(stats, yr)
+        for yr in progressbar.progressbar(range(2010, 2022), redirect_stdout=True):
+            url = self.url.format(yr)
             response = requests.get(url)
             zippedFile = zipfile.ZipFile(io.BytesIO(response.content))
             csvFilename = zippedFile.namelist()[0]
@@ -125,9 +127,12 @@ class EpaAqs():
             df['Day'] = df['Date'].dt.strftime('%m-%d')
             if (len(df.index) == 366):
                 df = df.loc[df.Day != '02-29', :]
-            df.sort_values('Date')
+            df = df.sort_values('Date')
+            df['Good'] = [1 if (int(aqi) <= 50) else 0
+                          for aqi in df['AQI']]
+            df['CumDays'] = df['Good'].cumsum()
             dfs.append(df)
-        return dfs
+        self.dfList = dfs
 
     def initLegendDf(self):
         result = {
@@ -141,7 +146,7 @@ class EpaAqs():
         df = pd.DataFrame(result)
         df['cap'] = [(list(levelRange)[-1] + 1)
                      for levelRange in df.range]
-        return df
+        self.aqiDict = df
 
     def yAxisByAQI(self, ax: Axes, aqiCol: pd.Series):
         ticks = [0]

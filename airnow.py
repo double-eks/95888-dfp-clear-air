@@ -150,7 +150,7 @@ class EpaAqs():
         ax.set_xlim(dates.min(), dates.max())
         ax.set_ylim(0, yMax)
         ax.tick_params(axis='both', labelsize=8, color='gray')
-        ax.tick_params(axis='x', labelrotation=45)
+        ax.tick_params(axis='x', labelrotation=15)
         ax.plot(dates, df['AQI'].values)
 
     def drawBackground(self, ax: Axes, worstLevelRow):

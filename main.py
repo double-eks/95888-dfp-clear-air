@@ -7,6 +7,7 @@ from urllib.request import urlopen
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
+import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
@@ -70,7 +71,10 @@ def aqiVizPage():
     console.requesting(f'EPA Air Quality System')
     yrDf = aqsAPI.request(2019, console.city, console.state)
     console.requested()
-    fig, ax = plt.subplots()
+    fig = plt.figure(tight_layout=True)
+    gs = gridspec.GridSpec(2, 2)
+    ax = fig.add_subplot(gs[0, :])
+    ax.set_xlabel('Dates')
     aqsAPI.drawTrendPlot(ax, yrDf)
     plt.show()
     homepage()
@@ -192,6 +196,10 @@ if __name__ == "__main__":
     asthmaAPI = cdcAPI(console.state)
 
     # Deploy
-    introPage()
-    homepage(new=True)
+    # introPage()
+    # homepage(new=True)
+
+    # ! Placeholder
+    aqiVizPage()
+    asthmaStatsPage()
     plt.close('all')

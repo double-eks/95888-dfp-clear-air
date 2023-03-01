@@ -106,38 +106,55 @@ class AirNow():
 
 class EpaAqs():
     def __init__(self) -> None:
-        self.url = 'https://aqs.epa.gov/aqsweb/airdata/{}_aqi_by_{}_{}.zip'
+        self.url = 'https://aqs.epa.gov/aqsweb/airdata/{}_aqi_by_cbsa_{}.zip'
         self.aqiDict = self.initLegendDf()
 
-    def request(self, year: int, city: str, state: str,
-                stats: str = 'daily', area: str = 'cbsa'):
-        url = self.url.format(stats, area, year)
-        response = requests.get(url)
-        zippedFile = zipfile.ZipFile(io.BytesIO(response.content))
-        csvFilename = zippedFile.namelist()[0]
-        csvFile = zippedFile.open(csvFilename)
-        df = pd.read_csv(csvFile)
-        csvFile.close()
-        zippedFile.close()
-        df = df.loc[df['CBSA'] == f'{city}, {state}', :]
-        return df
+    def request(self, city: str, state: str, stats: str = 'daily'):
+        dfs = []
+        for yr in range(2010, 2022):
+            url = self.url.format(stats, yr)
+            response = requests.get(url)
+            zippedFile = zipfile.ZipFile(io.BytesIO(response.content))
+            csvFilename = zippedFile.namelist()[0]
+            csvFile = zippedFile.open(csvFilename)
+            df = pd.read_csv(csvFile)
+            csvFile.close()
+            zippedFile.close()
+            df = df.loc[df['CBSA'] == f'{city}, {state}', :]
+            df['Date'] = pd.to_datetime(df['Date'])
+            df['Day'] = df['Date'].dt.strftime('%m-%d')
+            if (len(df.index) == 366):
+                df = df.loc[df.Day != '02-29', :]
+            df.sort_values('Date')
+            dfs.append(df)
+        return dfs
 
     def initLegendDf(self):
         result = {
             'color': ['#00e400', '#ffff00', '#ff7e00', '#ff0000', '#8f3f97', '#7e0023'],
-            'aqi': [(0, 50), (50, 100), (100, 150), (150, 200), (200, 300), (300, 500)],
+            'range': [range(0, 50), range(50, 100), range(100, 150),
+                      range(150, 200), range(200, 300), range(300, 500)],
             'category': ['Good', 'Moderate', 'Unhealthy for Sensitive Groups',
                          'Unhealthy', 'Very Unhealthy', 'Hazardous'],
             'number': [i for i in range(1, 7)]
         }
         df = pd.DataFrame(result)
+        df['cap'] = [(list(levelRange)[-1] + 1)
+                     for levelRange in df.range]
         return df
 
-    def findWorstRange(self, worst):
+    def yAxisByAQI(self, ax: Axes, aqiCol: pd.Series):
+        ticks = [0]
+        worstAQI = aqiCol.max()
         for row in self.aqiDict.index:
-            levelMax = self.aqiDict.loc[row, 'aqi'][1]
-            if (worst < levelMax):
-                return row
+            levelCap = self.aqiDict.cap[row]
+            levelColor = self.aqiDict.color[row]
+            ticks.append(levelCap)
+            # ax.axhline(y=levelCap, color=levelColor, linewidth=1, alpha=0.5)
+            if (worstAQI < levelCap):
+                break
+        ax.set_yticks(ticks)
+        ax.set_ylim((0, ticks[-1]))
 
     def drawTrendPlot(self, ax: Axes, df: pd.DataFrame):
         dates = pd.to_datetime(df['Date'])

@@ -1,16 +1,19 @@
+import os
+
+os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import logging
-import os
 import re
 from datetime import timedelta
 from urllib.request import urlopen
 
-os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
-
+import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
+from matplotlib.axes import Axes
 
 from airnow import AirNow, EpaAqs
 from asthmaindicator import cdcAPI
@@ -68,16 +71,60 @@ def introPage():
 
 def aqiVizPage():
     console.header('AQI Visualization')
-    console.requesting(f'EPA Air Quality System')
-    yrDf = aqsAPI.request(2019, console.city, console.state)
-    console.requested()
+    # console.requesting(f'EPA Air Quality System')
+    yrDfs = aqsAPI.request(console.city, console.state)
+    # console.requested()
+    aqiTracker(yrDfs)
+    # ax.set_xlabel('Dates')
+    # aqsAPI.drawTrendPlot(ax, yrDf)
+    # homepage()
+
+
+def aqiTracker(df: pd.DataFrame):
     fig = plt.figure(tight_layout=True)
+    fig.set_size_inches(10, 5)
     gs = gridspec.GridSpec(2, 2)
-    ax = fig.add_subplot(gs[0, :])
-    ax.set_xlabel('Dates')
-    aqsAPI.drawTrendPlot(ax, yrDf)
+
+    dailyAqiAx = fig.add_subplot(gs[0, :])
+    levelBarAx = fig.add_subplot(gs[1, 0])
+    monthBarAx = fig.add_subplot(gs[1, 1])
+
+    dailyAqPlot(df, dailyAqiAx)
+
+    # levelBarAx(df, levelBarAx)
+    # monthBarAx(df, monthBarAx)
+
+    return
+
+
+def dailyAqPlot(dfs: list[pd.DataFrame], ax: Axes):
+    latestDf = dfs[-1]
+    halfDF = pd.concat(dfs[(len(dfs) // 2):])
+    mergedDF = pd.concat(dfs)
+    averageAQI = halfDF.groupby('Day')['AQI'].mean(numeric_only=True)
+    periodMax = mergedDF.groupby('Day')['AQI'].max(numeric_only=True)
+    periodMin = mergedDF.groupby('Day')['AQI'].min(numeric_only=True)
+
+    ax.grid(True, axis='y', linestyle='dotted')
+    ax.fill_between(latestDf['Date'], periodMin, periodMax, alpha=0.3,
+                    color='lightgray')
+    ax.plot(latestDf['Date'], averageAQI, linewidth=4, alpha=0.3)
+    ax.plot(latestDf['Date'], latestDf['AQI'], label='2022')
+    ax.tick_params(axis='both', labelsize=8, color='gray')
+    ax.tick_params(axis='x', rotation=30)
+    ax.set_xlim((latestDf['Date'].min()), (latestDf['Date'].max()))
+    ax.set_ylabel('Daily AQI Value', fontweight='bold')
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
+    aqsAPI.yAxisByAQI(ax, latestDf['AQI'])
     plt.show()
-    homepage()
+
+
+def levelCountBar(df: pd.DataFrame, ax: Axes):
+    return
+
+
+def monthCumBar(df: pd.DataFrame, ax: Axes):
+    return
 
 
 def asthmaStatsPage():
@@ -184,7 +231,13 @@ if __name__ == "__main__":
     console = Console()
     logging.basicConfig(level=logging.INFO)
 
-    # Web Scraping
+    # ! Placeholder
+    aqsAPI = EpaAqs()
+    aqiVizPage()
+    plt.close('all')
+
+
+'''
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
     nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
     airNowGov = 'https://www.airnow.gov/aqi/'
@@ -192,14 +245,9 @@ if __name__ == "__main__":
     epa = webScraping(epaURL)
     nchc = webScraping(nchcURL)
     airNowAPI = AirNow()
-    aqsAPI = EpaAqs()
     asthmaAPI = cdcAPI(console.state)
 
-    # Deploy
     # introPage()
     # homepage(new=True)
-
-    # ! Placeholder
-    aqiVizPage()
-    asthmaStatsPage()
-    plt.close('all')
+    # asthmaStatsPage()
+'''

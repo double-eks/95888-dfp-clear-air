@@ -5,8 +5,6 @@ import requests
 from bs4 import BeautifulSoup
 from pandas import DataFrame
 
-# from main import homepage
-
 
 class Console:
 
@@ -18,15 +16,10 @@ class Console:
         # print('Hello\tthere are 2 intake questions before a go... Please')
         # self.zip = self.prompt(
         #     question='your 5-digit ZIP Code', answerPattern=r'\d{5}')
-        # self.adult = self.prompt(
-        #     options=['Y', 'N'],
-        #     answers=['for adult services', 'for child service'],
-        #     quitButtonOn=False)
         # self.city, self.state = self.lookUpCityState()
         # self.adult = True if (self.adult == 'Y') else False
         self.today = datetime.now()
         # # TODO >>> Placeholder
-        self.adult = True
         self.zip = '15213'
         self.city, self.state = self.lookUpCityState()
         self.city = self.city.capitalize()
@@ -43,17 +36,13 @@ class Console:
         return text.find('City').text, text.find('State').text
 
     def prompt(self, question: str = '', answerPattern: str = '',
-               answers: list = [], options: list = [],
-               menuNavOn: bool = False, quitButtonOn: bool = True, answerRequired: bool = True):
+               answers: list = [], answerRequired: bool = True,
+               menuNavOn: bool = False, quitButtonOn: bool = True):
         if (question):
             menuInfo = question
         else:
-            if (options):  # Generate option description
-                optList = [self.formattedOption(options[i], answers[i])
-                           for i in range(len(options))]
-            else:  # Use simplified option template
-                optList = [self.formattedOption('number keys',
-                                                'to browser Features')]
+            optList = [self.formattedOption('number keys',
+                                            'to browser Features')]
             if (menuNavOn):
                 optList.append(f'{self.formattedChoice("H")} for Home Menu')
             if (quitButtonOn):
@@ -67,12 +56,9 @@ class Console:
                     if (re.search(answerPattern, response) != None):
                         break
                 else:  # Choose one option
-                    if (options):
-                        checker = options
-                    else:
-                        checker = [str(i + 1) for i in range(len(answers))]
+                    checker = [str(i + 1) for i in range(len(answers))]
                     if (menuNavOn) and (response.upper() == 'H'):
-                        return 'H'
+                        break
                     if (response.upper() == 'Q'):
                         quit()
                     elif (response.upper() in checker):
@@ -103,6 +89,8 @@ class Console:
     def requesting(self, message: str):
         print('')
         self.loading(message)
+
+    def requested(self):
         self.checkpoint('Data loaded...')
 
     def header(self, message: str, sub: bool = False):

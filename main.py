@@ -3,7 +3,6 @@ import logging
 import os
 import re
 from datetime import timedelta
-from urllib import response
 from urllib.request import urlopen
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
@@ -12,7 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 
-from airnow import AirNow
+from airnow import AirNow, EpaAqs
 from asthmaindicator import cdcAPI
 from console import Console
 
@@ -21,8 +20,7 @@ def webScraping(url: str) -> BeautifulSoup:
     domain = re.search(r'(?<=https://www.)[^/]*(?=/)', url).group()
     console.loading(domain)
     html = urlopen(url)
-    bs = BeautifulSoup(html.read(), "lxml")
-    return bs
+    return BeautifulSoup(html.read(), "lxml")
 
 
 def findSubItem(tag: Tag, itemTag: str, itemName: str) -> Tag:
@@ -56,29 +54,26 @@ def introPage():
     aqiIntro = aqiIntroTag.text.strip()
     console.header('WELCOME to ClearAir for Better Asthma Management')
     console.header(brief, sub=True)
-    console.para(aqiIntro)
+    console.para(aqiIntro, preIndent=True)
     console.requesting(f'AirNow API for a quick view of AQI in {console.city}')
     current = airNowAPI.getCurrByZip(console.zip)
     forecasting = airNowAPI.getForecastByZip(console.zip,
                                              console.today + pd.Timedelta(days=1))
     columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
     masterTable = pd.concat([current[columns], forecasting[columns]])
+    console.requested()
     console.table(masterTable)
 
 
-def homepage(new: bool = False):
-    features = [
-        'Asthma Statistics',
-        'Asthma Triggers',
-    ]
-    if (not new):
-        console.separator()
-    console.multiChoice(features)
-    response = console.prompt(answers=features)
-    if (response == '1'):
-        asthmaStatsPage()
-    elif (response == '2'):
-        asthmaTriggerPage()
+def aqiVizPage():
+    console.header('AQI Visualization')
+    console.requesting(f'EPA Air Quality System')
+    yrDf = aqsAPI.request(2019, console.city, console.state)
+    console.requested()
+    fig, ax = plt.subplots()
+    aqsAPI.drawTrendPlot(ax, yrDf)
+    plt.show()
+    homepage()
 
 
 def asthmaStatsPage():
@@ -88,7 +83,7 @@ def asthmaStatsPage():
     console.separator()
     console.header('Asthma Statistical Charts', sub=True)
     console.requesting(f'CDC API for asthma indicators in {console.state}')
-
+    console.requested()
     asthmaAPI.trend()
     console.checkpoint('')
     asthmaAPI.demography()
@@ -124,7 +119,8 @@ def navTrigger():
     triggersList = [s for s in triggersListTag.stripped_strings]
     console.multiChoice(triggersList)
     response = console.prompt(answers=triggersList, menuNavOn=True)
-    if (response == 'H'):
+    print(response)
+    if (response.lower() == 'h'):
         homepage()
     else:
         i = int(response) - 1
@@ -155,8 +151,27 @@ def triggerReport(triggersListTag: Tag, triggersList: list, triggerIndex: int):
     for detail in (actionDetail.stripped_strings):
         if (isValidText(detail)):
             console.bullet(detail)
+    # Show options
     console.separator()
     navTrigger()
+
+
+def homepage(new: bool = False):
+    features = [
+        'AQI ?????',
+        'Asthma Statistics',
+        'Asthma Triggers',
+    ]
+    if (not new):
+        console.separator()
+    console.multiChoice(features)
+    response = console.prompt(answers=features)
+    if (response == '1'):
+        aqiVizPage()
+    elif (response == '2'):
+        asthmaStatsPage()
+    elif (response == '3'):
+        asthmaTriggerPage()
 
 
 if __name__ == "__main__":
@@ -173,14 +188,10 @@ if __name__ == "__main__":
     epa = webScraping(epaURL)
     nchc = webScraping(nchcURL)
     airNowAPI = AirNow()
+    aqsAPI = EpaAqs()
     asthmaAPI = cdcAPI(console.state)
 
     # Deploy
-    # introPage()
-    # asthmaPage()
+    introPage()
     homepage(new=True)
-    # console.checkpoint('')
-    # triggerPage()
-    # console.checkpoint('')
-    # fastFactsPage()
     plt.close('all')

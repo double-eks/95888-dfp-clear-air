@@ -96,24 +96,13 @@ class cdcAPI:
             zscore = (data - data.mean(numeric_only=True)) / \
                 data.std(numeric_only=True)
             ax.plot(zscore.index, zscore.values,
-                    label=name, marker='.')
+                    label=name, linewidth=2, marker='o')
         ax.legend(title='Standardalized Asthma Indicator', loc='upper center',
                   title_fontsize=8, fontsize=8, ncol=2)
         ax.set_title(f'Asthma Trend {self.titleSuffix}', fontweight='bold')
         plt.show()
-    #     questionDict = {'Asthma mortality rate': 'Mortality Rate',
-    #                     'Current asthma prevalence among '
-    #                     'adults aged >= 18 years': 'Prevalence among Adults'}
-    #     overallDf = self.df[self.df.Demography == 'Overall']
-
-    #     xTicks = overallDf.index.unique()
-    #     ax.set_ylim(-2, 2)
-    #     self.zScoreAx(ax, xTicks)
-
-    #
 
     def demography(self):
-        # df = self.df[self.df.Category != 'Overall']
         df = self.df
         factors = df.Factor.unique()
         categoriesArr = df.Category.unique()
@@ -158,35 +147,33 @@ class cdcAPI:
         ax.fill_between(self.xTicks, 0, overallDf.Rate.values,
                         color='lightgray', alpha=0.3)
 
-        ax.plot(overallDf.index, overallDf.Rate, linestyle='dashed',
-                label='Average', color='gray', linewidth=1)
+        ax.plot(overallDf.index, overallDf.Rate,
+                label='Average', color='gray', linewidth=4, alpha=0.3)
         for name, subgroup in colDf.groupby(subField):
             line = ax.plot(subgroup.index, subgroup.Rate,
                            label=name, marker='.')
             yValues.append(subgroup.Rate.values)
             lineColot = line[0].get_color()
-            self.annoateAx(ax, subgroup.Rate.values, lineColot)
+            self.annoateAx(ax, subgroup.Rate.values, fontsize=7,
+                           color=lineColot, textcoords='offset points')
 
         if (fill):
             ax.fill_between(self.xTicks, yValues[0], yValues[1],
                             color='gray', alpha=0.2)
         ax.set_xlim(self.xLim)
         ax.set_xticks(self.xTicks)
-        ax.set_xticklabels(self.xTicks, rotation=45, fontsize=7)
         ax.set_ylim((0, yMax))
         ax.set_yticks(yTicks)
-        ax.set_yticklabels(yTicks, fontsize=7)
+        ax.tick_params(axis='both', labelsize=7)
         ax.legend(title=colField, loc='lower right', ncol=legendCol,
                   title_fontsize=7, fontsize=6)
 
-    def annoateAx(self, ax: plt.Axes, yValues, lineColor):
+    def annoateAx(self, ax: plt.Axes, yValues, **kwargs):
         xMax = self.xTicks[yValues.argmax()]
         xMin = self.xTicks[yValues.argmin()]
         yMax, yMin = yValues.max(), yValues.min()
-        ax.annotate(yMax, xy=(xMax, yMax), xytext=(-6, 6),
-                    textcoords='offset points', color=lineColor, fontsize=7)
-        ax.annotate(yMin, xy=(xMin, yMin), xytext=(-6, -10),
-                    textcoords='offset points', color=lineColor, fontsize=7)
+        ax.annotate(yMax, xy=(xMax, yMax), xytext=(-6, 6), **kwargs)
+        ax.annotate(yMin, xy=(xMin, yMin), xytext=(-6, -10), **kwargs)
 
 
 def filterDf(df: pd.DataFrame, field: str, target: str):

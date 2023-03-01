@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from datetime import timedelta
+from urllib import response
 from urllib.request import urlopen
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
@@ -48,56 +49,86 @@ def summarizeOneLine(tag: Tag):
 
 
 def introPage():
-    brief = [console.location,
-             console.today.strftime('%a, %b %d, %Y, %I:%M %p')]
+    brief = '{}\t{}'.format(console.location,
+                            console.today.strftime('%a, %b %d, %Y, %I:%M %p'))
     aqiIntroTag = webScraping(airNowGov).find(
         'div', attrs={'class': 'container related-announcements-container pull-left'})
     aqiIntro = aqiIntroTag.text.strip()
     console.header('WELCOME to ClearAir for Better Asthma Management')
-    console.subHeader([brief])
+    console.header(brief, sub=True)
     console.para(aqiIntro)
-    console.loading(f'AirNow API for a quick view of AQI in {console.city}',
-                    newLine=True)
+    console.requesting(f'AirNow API for a quick view of AQI in {console.city}')
     current = airNowAPI.getCurrByZip(console.zip)
     forecasting = airNowAPI.getForecastByZip(console.zip,
                                              console.today + pd.Timedelta(days=1))
     columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
     masterTable = pd.concat([current[columns], forecasting[columns]])
-    console.checkpoint()
     console.table(masterTable)
 
 
-def asthmaPage():
-    console.para('Air quality is signifcant for asthma management. '
-                 "Let's take a look at the asthma trend first.")
-    console.loading(f'CDC API for asthma indicators in {console.state}',
-                    newLine=True)
-    console.checkpoint()
+def homepage(new: bool = False):
+    features = [
+        'Asthma Statistics',
+        'Asthma Triggers',
+    ]
+    if (not new):
+        console.separator()
+    console.multiChoice(features)
+    response = console.prompt(answers=features)
+    if (response == '1'):
+        asthmaStatsPage()
+    elif (response == '2'):
+        asthmaTriggerPage()
+
+
+def asthmaStatsPage():
+    console.header('Asthma Statistics © CDC')
+    console.header('Asthma FastFacts ', sub=True)
+    fastFactsPage()
+    console.separator()
+    console.header('Asthma Statistical Charts', sub=True)
+    console.requesting(f'CDC API for asthma indicators in {console.state}')
+
     asthmaAPI.trend()
     console.checkpoint('')
     asthmaAPI.demography()
+    homepage()
 
 
-def triggerPage():
-    # Scrap essential info
-    triggersListTag = epa.find('article').find('ul')
-    triggersList = [s for s in triggersListTag.stripped_strings]
-    triggerIntro = ''
+def fastFactsPage():
+    cardTag = 'div'
+    attr = 'class'
+    cardClass = 'card mb-3'
+    cardHeaderClass = 'bg-primary'
+    for card in nchc.find_all(cardTag, attrs={attr: cardClass}):
+        header = card.find_next('div')
+        if (cardHeaderClass in header.get(attr)):
+            console.title(header.text.strip())
+            for fact in card.find_all('li'):
+                console.bullet(fact.text.strip())
+
+
+def asthmaTriggerPage():
+    console.header('Asthma Triggers © EPA')
+    asthmaIntro = ''
     for line in epa.find('article').find_all('p'):
         if (len(line.attrs) == 0):
-            triggerIntro = line.string.strip()
+            asthmaIntro = line.string.strip()
             break
-    # Output to Console
-    console.header('Asthma Triggers © EPA')
-    console.para('More than 25 million people in the U.S. have asthma. '
-                 'It is a long-term disease that causes your airways to become swollen and inflamed, '
-                 'making it hard to breathe. There is no cure for asthma, '
-                 'but it can be managed and controlled.')
-    console.para(triggerIntro, preIndent=True)
+    console.para(asthmaIntro, preIndent=True)
+    navTrigger()
+
+
+def navTrigger():
+    triggersListTag = epa.find('article').find('ul')
+    triggersList = [s for s in triggersListTag.stripped_strings]
     console.multiChoice(triggersList)
-    # Ask for option and output to console
-    for inputNum in range(len(triggersList)):
-        triggerReport(triggersListTag, triggersList, inputNum)
+    response = console.prompt(answers=triggersList, menuNavOn=True)
+    if (response == 'H'):
+        homepage()
+    else:
+        i = int(response) - 1
+        triggerReport(triggersListTag, triggersList, i)
 
 
 def triggerReport(triggersListTag: Tag, triggersList: list, triggerIndex: int):
@@ -124,21 +155,8 @@ def triggerReport(triggersListTag: Tag, triggersList: list, triggerIndex: int):
     for detail in (actionDetail.stripped_strings):
         if (isValidText(detail)):
             console.bullet(detail)
-
-
-def fastStatsPage():
-    cardTag = 'div'
-    attr = 'class'
-    cardClass = 'card mb-3'
-    cardHeaderClass = 'bg-primary'
-
-    console.header('Asthma Faststats © CDC')
-    for card in nchc.find_all(cardTag, attrs={attr: cardClass}):
-        header = card.find_next('div')
-        if (cardHeaderClass in header.get(attr)):
-            console.title(header.text.strip())
-            for fact in card.find_all('li'):
-                console.bullet(fact.text.strip())
+    console.separator()
+    navTrigger()
 
 
 if __name__ == "__main__":
@@ -160,9 +178,9 @@ if __name__ == "__main__":
     # Deploy
     # introPage()
     # asthmaPage()
-    # console.homepage()
+    homepage(new=True)
     # console.checkpoint('')
     # triggerPage()
     # console.checkpoint('')
-    # fastStatsPage()
+    # fastFactsPage()
     plt.close('all')

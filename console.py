@@ -5,6 +5,8 @@ import requests
 from bs4 import BeautifulSoup
 from pandas import DataFrame
 
+# from main import homepage
+
 
 class Console:
 
@@ -19,7 +21,7 @@ class Console:
         # self.adult = self.prompt(
         #     options=['Y', 'N'],
         #     answers=['for adult services', 'for child service'],
-        #     menuNavOn=False, quitButtonOn=False)
+        #     quitButtonOn=False)
         # self.city, self.state = self.lookUpCityState()
         # self.adult = True if (self.adult == 'Y') else False
         self.today = datetime.now()
@@ -42,16 +44,16 @@ class Console:
 
     def prompt(self, question: str = '', answerPattern: str = '',
                answers: list = [], options: list = [],
-               menuNavOn: bool = True, quitButtonOn: bool = True, answerRequired: bool = True):
+               menuNavOn: bool = False, quitButtonOn: bool = True, answerRequired: bool = True):
         if (question):
             menuInfo = question
         else:
-            if (answers):  # Generate option description
+            if (options):  # Generate option description
                 optList = [self.formattedOption(options[i], answers[i])
                            for i in range(len(options))]
             else:  # Use simplified option template
-                template = self.formattedOption("\u001B[3moption number")
-                optList = [f'{template} for Browser Options']
+                optList = [self.formattedOption('number keys',
+                                                'to browser Features')]
             if (menuNavOn):
                 optList.append(f'{self.formattedChoice("H")} for Home Menu')
             if (quitButtonOn):
@@ -69,17 +71,17 @@ class Console:
                         checker = options
                     else:
                         checker = [str(i + 1) for i in range(len(answers))]
+                    if (menuNavOn) and (response.upper() == 'H'):
+                        return 'H'
                     if (response.upper() == 'Q'):
                         quit()
-                    elif (response.upper() == 'H'):
-                        return self.homepage()
                     elif (response.upper() in checker):
                         break
                 response = input(
                     '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again ')
         return response
 
-    def checkpoint(self, message: str = 'Data loaded...'):
+    def checkpoint(self, message: str = ''):
         template = 'Press any keys to continue'
         if (message != ''):
             template = f'{message} {template}'
@@ -92,35 +94,30 @@ class Console:
         result = self.formattedChoice(option) + ' ' + explanation
         return result
 
-    def loading(self, message: str, newLine: bool = False):
+    def loading(self, message: str):
         widget = f' requesting from {message} '
         bar = widget.center(Console._LINE_LENGTH, '>')
         fmtBar = '\u001B[3;30m{}\u001B[0m'.format(bar)
-        if (newLine):
-            print('')
         print(fmtBar)
 
     def requesting(self, message: str):
-        message = f'>>>>>\t{message} '
-        message = message.ljust(Console._LINE_LENGTH, '>')
-        print(Console._PROGRESS_BAR.format(message))
+        print('')
+        self.loading(message)
+        self.checkpoint('Data loaded...')
 
-    def header(self, message: str):
+    def header(self, message: str, sub: bool = False):
         headerFmt = '\u001B[1m{}\u001B[0m'
         separator = ('-' * (len(message) + 12)).center(Console._LINE_LENGTH)
         title = message.center(Console._LINE_LENGTH)
-        print(headerFmt.format('\n' + separator))
-        print(headerFmt.format(title))
-        print(headerFmt.format(separator + '\n'))
+        if (sub):
+            print(headerFmt.format(title))
+        else:
+            print(headerFmt.format('\n' + separator))
+            print(headerFmt.format(title))
+            print(headerFmt.format(separator + '\n'))
 
-    def subHeader(self, widgets: list[list[str]], separator: str = ','):
-        barTemplate = '{:30s}{:30s}'
-        for widget in widgets:
-            left = widget[0]
-            right = f'{separator} '.join(widget[1:])
-            barHeader = barTemplate.format(left, right)
-            print(barHeader.center(Console._LINE_LENGTH))
-        print('')
+    def separator(self):
+        print(f"\n{'.' * Console._LINE_LENGTH}\n")
 
     def multiChoice(self, choices: list):
         print('')
@@ -166,11 +163,3 @@ class Console:
                 currLine = f'{prefix}{word} '
         lines.append(currLine)
         return lines
-
-    def homepage(self):
-        features = [
-            'Air Quality Forecast Table'
-            'Environmental Asthma Triggers',
-            'NCHC Asthma FastStats'
-        ]
-        self.multiChoice(features)

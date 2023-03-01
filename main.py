@@ -3,19 +3,16 @@ import os
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import re
-from datetime import timedelta
 from urllib.request import urlopen
 
 import matplotlib.dates as mdates
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup, Tag
 from matplotlib.axes import Axes
 
 from airnow import AirNow, EpaAqs
-from asthmaindicator import cdcAPI
 from console import Console
 
 
@@ -38,40 +35,53 @@ def aqiVizPage():
 def aqiTracker():
     fig = plt.figure(tight_layout=True)
     fig.set_size_inches(8, 8)
-    gs = gridspec.GridSpec(3, 3)
+    gs = gridspec.GridSpec(3, 4)
 
     dailyAqiAx = fig.add_subplot(gs[0, :])
-    cumDayAx = fig.add_subplot(gs[1, 0])
-    pollutantAx = fig.add_subplot(gs[2, 1])
-    tileAx = fig.add_subplot(gs[2, 2])
+    cumDayAx = fig.add_subplot(gs[1, :])
+    pollutantAx = fig.add_subplot(gs[2, :2])
+    tileAx = fig.add_subplot(gs[2, 2:])
 
-    dailyAqPlot(dailyAqiAx, cumDayAx)
+    dailyAqiPlot(dailyAqiAx)
+    cumGoodDayPlot(cumDayAx)
     # levelBarAx(df, levelBarAx)
     # monthBarAx(df, monthBarAx)
     return
 
 
-def dailyAqPlot(ax1: Axes, ax2: Axes):
-    dfs = aqsAPI.dfList
-    latestDf = dfs[-1]
-    halfDF = pd.concat(dfs[(len(dfs) // 2):])
-    mergedDF = pd.concat(dfs)
-    averageAQI = halfDF.groupby('Day')['AQI'].mean(numeric_only=True)
-    periodMax = mergedDF.groupby('Day')['AQI'].max(numeric_only=True)
-    periodMin = mergedDF.groupby('Day')['AQI'].min(numeric_only=True)
+def dailyAqiPlot(ax: Axes):
+    df = aqsAPI.dfList[-1]
+    movingAvg = df['AQI'].rolling(window=7).mean()
+    biWeekAvg = df['AQI'].rolling(window=14).mean()
+    dateLim = (df['Date'].min()), (df['Date'].max())
+    ax.grid(True, linestyle='dotted')
+    ax.plot(df['Date'], movingAvg)
+    ax.plot(df['Date'], biWeekAvg)
+    ax.plot(df['Date'], df['AQI'])
+    aqsAPI.yAxisByAQI(ax, df['AQI'])
+    fmtSharingAx(ax, dateLim)
+    return
+    # ax.set_ylabel('Daily AQI Value', fontweight='bold')
 
-    ax1.grid(True, axis='y', linestyle='dotted')
-    ax1.fill_between(latestDf['Date'], periodMin, periodMax, alpha=0.3,
-                     color='lightgray')
-    ax1.plot(latestDf['Date'], averageAQI, linewidth=4, alpha=0.3)
-    ax1.plot(latestDf['Date'], latestDf['AQI'], label='2022')
-    ax1.tick_params(axis='both', labelsize=8, color='gray')
-    ax1.tick_params(axis='x', rotation=30)
-    ax1.set_xlim((latestDf['Date'].min()), (latestDf['Date'].max()))
-    ax1.set_ylabel('Daily AQI Value', fontweight='bold')
-    ax1.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
-    aqsAPI.yAxisByAQI(ax1, latestDf['AQI'])
-    plt.show()
+
+def cumGoodDayPlot(ax: Axes):
+    df = aqsAPI.dfList[-1]
+    dateLim = (df['Date'].min()), (df['Date'].max())
+    ax.grid(True, linestyle='dotted')
+    ax.plot(df['Date'], df['CumDays'])
+    yrDays = [i for i in range(0, 360, 30)]
+    yrDays.append(365)
+    ax.set_ylim((0, 365))
+    ax.set_yticks(yrDays)
+    fmtSharingAx(ax, dateLim)
+    return
+
+
+def fmtSharingAx(ax: Axes, dateLim: tuple):
+    ax.tick_params(axis='both', labelsize=8, color='gray')
+    ax.tick_params(axis='x', rotation=30)
+    ax.set_xlim(dateLim)
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m'))
 
 
 def levelCountBar(df: pd.DataFrame, ax: Axes):
@@ -94,4 +104,6 @@ if __name__ == "__main__":
     aqsAPI = EpaAqs(console.city, console.state)
 
     aqiVizPage()
+
+    plt.show()
     plt.close('all')

@@ -113,7 +113,7 @@ class EpaAqs():
 
     def initRequest(self, city: str, state: str):
         dfs = []
-        for yr in progressbar.progressbar(range(2010, 2022), redirect_stdout=True):
+        for yr in progressbar.progressbar(range(2021, 2022), redirect_stdout=True):
             url = self.url.format(yr)
             response = requests.get(url)
             zippedFile = zipfile.ZipFile(io.BytesIO(response.content))

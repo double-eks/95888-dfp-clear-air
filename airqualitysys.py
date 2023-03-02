@@ -84,7 +84,7 @@ def setFrame(ax: Axes, *args):
 # ============================================================================ #
 
 
-def aqiTrackerByYear(yrDf: pd.DataFrame, yr: int, **kwargs):
+def aqiTrackerByYear(yrDf: pd.DataFrame, yr: int, city: str, state: str, **kwargs):
     fig = plt.figure(tight_layout=True)
     fig.set_size_inches(8, 6)
     gs = gridspec.GridSpec(2, 2)
@@ -101,8 +101,11 @@ def aqiTrackerByYear(yrDf: pd.DataFrame, yr: int, **kwargs):
     cumDayAx.set_ylabel('Cumulative Days', **kwargs)
     dailyAqiAx.set_xlabel(f'Air Quality Annual Trend', **kwargs)
     cumDayAx.set_xlabel(f'Cumulative Good AQI Days (AQI<50)', **kwargs)
+
+    fig.suptitle('Air Quality Time Series Analysis of Air Quality '
+                 f'in {city}, {state} ({yr})',
+                 fontsize=13, fontweight='bold')
     plt.show()
-    return fig
 
 
 def dailyAqiPlot(ax: Axes, sAQI: pd.Series, yr: int):

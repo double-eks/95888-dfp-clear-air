@@ -127,16 +127,9 @@ def aqiStatsPage():
     dfs = requestAQS(start=2021)
     yrDf = dfs.loc[(dfs.index.year == 2021), :]
     yr = 2021
-    aqiTrackerFig = aqiTrackerByYear(yrDf, yr, fontweight='bold', fontsize=10)
-    aqiTrackerFig.suptitle('Air Quality Time Series Analysis of Air Quality '
-                           f'in {console.city}, {console.state} ({yr})',
-                           fontsize=13, fontweight='bold')
-
+    aqiTrackerByYear(yrDf, yr, console.city, console.state,
+                     fontweight='bold', fontsize=10)
     return
-    aqiDistribution(singleYr, 2021, fontweight='bold', fontsize=10)
-    # ax.set_xlabel('Dates')
-    # aqsAPI.drawTrendPlot(ax, yrDf)
-    # homepage()
 
 
 # ============================================================================ #
@@ -219,10 +212,10 @@ def isValidText(text: str):
 def homepage(new: bool = False):
     # Feature menu
     features = [
-        "How is today's air quality? Know what you're breathing in real-time",
-        'Asthma Triggers',
+        "Is air quality today good? Know what you're breathing in real-time",
+        'How about the past and the future? Dig into the AQI data',
         'Who does asthma really affect? Unlock the demographic insights',
-        'Know your asthma triggers and learn how to avoid them'
+        'Stay informed about your asthma triggers and learn how to avoid them'
     ]
     brief = '{}\t{}'.format(console.location,
                             console.today.strftime('%a, %b %d, %Y, %I:%M %p'))
@@ -239,6 +232,8 @@ def homepage(new: bool = False):
         console.header('Air Quality Index from CDC AirNow')
         airnowPage()
     elif (response == '2'):
+        console.header('AQI Time Series Analysis')
+        aqiStatsPage()
         return
     elif (response == '3'):
         console.header('Significant Asthma Statistics')
@@ -264,9 +259,9 @@ if __name__ == "__main__":
     asthmaAPI = AsthmaIndicator(console.state)
     airnowAPI = AirNow()
     aqsAPI = AirQualitySys()
-    # aqiPalette = aqsAPI.palette
+    aqiPalette = aqsAPI.palette
 
     # Deploy
     # prologue()
-    # homepage(True)
+    homepage(True)
     plt.close('all')

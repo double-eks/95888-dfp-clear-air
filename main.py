@@ -37,29 +37,119 @@ def webScraping(url: str) -> BeautifulSoup:
     return BeautifulSoup(html.read(), "lxml")
 
 
+def findSubItem(tag: Tag, itemTag: str, itemName: str) -> Tag:
+    for subTag in tag.find_all_next(itemTag):
+        if (subTag.text.strip().lower() == itemName.lower()):
+            return subTag
+
+
+def isValidText(text: str):
+    text = text.strip()
+    if (len(text) <= 1) or (not text[0].isalnum()):
+        return False
+    else:
+        return True
+
+
+# ============================================================================ #
+# Asthma Stats & Triggers
+# ============================================================================ #
+
+
+def asthmaStatsPage():
+    console.header('Asthma Statistics © CDC')
+    console.header('Asthma FastFacts ', sub=True)
+    fastFactsPage()
+    console.separator()
+    console.header('Asthma Statistical Charts', sub=True)
+    asthmaAPI.trend()
+    console.checkpoint('')
+    asthmaAPI.demography()
+    homepage()
+
+
+def fastFactsPage():
+    cardTag = 'div'
+    attr = 'class'
+    cardClass = 'card mb-3'
+    cardHeaderClass = 'bg-primary'
+    for card in nchc.find_all(cardTag, attrs={attr: cardClass}):
+        header = card.find_next('div')
+        if (cardHeaderClass in header.get(attr)):
+            console.title(header.text.strip())
+            for fact in card.find_all('li'):
+                console.bullet(fact.text.strip())
+
+
+def asthmaTriggerPage():
+    console.header('Asthma Triggers © EPA')
+    asthmaIntro = ''
+    for line in epa.find('article').find_all('p'):
+        if (len(line.attrs) == 0):
+            asthmaIntro = line.string.strip()
+            break
+    console.para(asthmaIntro, preIndent=True)
+    navTrigger()
+
+
+def navTrigger():
+    triggersListTag = epa.find('article').find('ul')
+    triggersList = [s for s in triggersListTag.stripped_strings]
+    console.multiChoice(triggersList)
+    response = console.prompt(answers=triggersList, menuNavOn=True)
+    print(response)
+    if (response.lower() == 'h'):
+        homepage()
+    else:
+        i = int(response) - 1
+        triggerReport(triggersListTag, triggersList, i)
+
+
+def triggerReport(triggersListTag: Tag, triggersList: list, triggerIndex: int):
+    """
+    Generate report for the selected trigger, including About and Actions
+    Args:
+        triggersListTag (Tag): tag of the trigger ul
+        triggersList (list): storing trigger options
+        triggerIndex (int): user response - 1 as the index
+    """
+    header = findSubItem(triggersListTag, 'h2', triggersList[triggerIndex])
+    about, action = header.find_all_next('h3', limit=2)
+    actionDetail = about.find_next('ul')
+    # Report the About part
+    console.title(about.text)
+    for tag in about.find_all_next():
+        if ('h' in tag.name):
+            break
+        if (('p' or 'li') in tag.name):
+            if (isValidText(tag.text)):
+                console.para(tag.text.strip())
+    # Report the Action You Can Take part
+    console.title(action.text)
+    for detail in (actionDetail.stripped_strings):
+        if (isValidText(detail)):
+            console.bullet(detail)
+    # Show options
+    console.separator()
+    navTrigger()
+
+
 def homepage(new: bool = False):
     return
 
 
-'''
-    features = [
-        'AQI ?????',
-        'Asthma Statistics',
-        'Asthma Triggers',
-    ]
-    if (not new):
-        console.separator()
-    console.multiChoice(features)
-    response = console.prompt(answers=features)
-    if (response == '1'):
-        aqiVizPage()
-    elif (response == '2'):
-        asthmaStatsPage()
-    elif (response == '3'):
-        asthmaTriggerPage()
-
-'''
-
 if __name__ == "__main__":
 
     console = Console()
+
+    # Web scraping url
+    epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
+    nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
+    epa = webScraping(epaURL)
+    nchc = webScraping(nchcURL)
+
+    # API
+    asthmaAPI = cdcAPI(console.state)
+    console.loading(f'CDC API for asthma indicators in {console.state}')
+    asthmaStatsPage()
+    asthmaTriggerPage()

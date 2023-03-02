@@ -1,3 +1,14 @@
+'''
+95-888 Data Focused Python
+Spring 2023 Mini 3
+
+Group 9: AirWise Asthma
+Xiao Xu
+xiaoxu@andrew.cmu.edu
+
+ps: oringal project name: ClearAir
+'''
+
 import os
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"

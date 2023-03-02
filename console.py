@@ -14,11 +14,6 @@ class Console:
     _LINE_LENGTH = 80
 
     def __init__(self) -> None:
-<<<<<<< HEAD
-=======
-        # # TODO >>> Placeholder
-        # print('Hello\tthere are 2 intake questions before a go... Please')
->>>>>>> aqs
         # self.zip = self.prompt(
         #     question='your 5-digit ZIP Code', answerPattern=r'\d{5}')
         # self.city, self.state = self.lookUpCityState()

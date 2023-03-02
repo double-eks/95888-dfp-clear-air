@@ -226,7 +226,7 @@ if __name__ == "__main__":
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
     nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
     airNowGov = 'https://www.airnow.gov/aqi/'
-    epa = webScraping()
+    epa = webScraping(epaURL)
     nchc = webScraping(nchcURL)
     airnowPortal = webScraping(airNowGov)
 
@@ -234,8 +234,8 @@ if __name__ == "__main__":
     console.loading(f'CDC API for asthma indicators in {console.state}')
     asthmaAPI = AsthmaIndicator(console.state)
     airnowAPI = AirNow()
-    aqsAPI = AirQualitySys()
-    aqiPalette = aqsAPI.palette
+    aqsAPI = AirQualitySys(console.city, console.state)
+    # aqiPalette = aqsAPI.palette
 
     # Deploy
     prologue()

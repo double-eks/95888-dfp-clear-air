@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 
+import progressbar
 import requests
 from bs4 import BeautifulSoup
 from pandas import DataFrame
@@ -13,18 +14,26 @@ class Console:
     _LINE_LENGTH = 80
 
     def __init__(self) -> None:
+<<<<<<< HEAD
+=======
+        # # TODO >>> Placeholder
+        # print('Hello\tthere are 2 intake questions before a go... Please')
+>>>>>>> aqs
         # self.zip = self.prompt(
         #     question='your 5-digit ZIP Code', answerPattern=r'\d{5}')
         # self.city, self.state = self.lookUpCityState()
         self.today = datetime.now()
-        # # TODO >>> Placeholder
         self.zip = '15213'
         self.city, self.state = self.lookUpCityState()
         self.city = self.city.capitalize()
         self.state = self.state.upper()
-        # # TODO <<< Placeholder
         self.location = ', '.join([self.city, self.state, self.zip])
-        print(f"User from {self.location}, let's have fun with ClearAir!\n")
+        # print(f"User from {self.location}, let's have fun with ClearAir!\n")
+        # # TODO <<< Placeholder
+        self.widget = ['\x1b[3m{} API \x1b[0m',
+                       progressbar.Bar(marker='>'),
+                       progressbar.ETA(), '  ',
+                       progressbar.Percentage()]
 
     def lookUpCityState(self):
         xml = '<CityStateLookupRequest USERID="{}"><ZipCode ID="0"><Zip5>{}</Zip5></ZipCode></CityStateLookupRequest>'

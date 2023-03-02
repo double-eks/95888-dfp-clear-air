@@ -14,7 +14,6 @@ import os
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import re
-from datetime import timedelta
 from urllib.request import urlopen
 
 import matplotlib.dates as mdates
@@ -22,6 +21,7 @@ import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import progressbar
 from bs4 import BeautifulSoup, Tag
 from matplotlib.axes import Axes
 
@@ -234,6 +234,8 @@ if __name__ == "__main__":
     console.loading(f'CDC API for asthma indicators in {console.state}')
     asthmaAPI = AsthmaIndicator(console.state)
     airnowAPI = AirNow()
+    aqsAPI = AirQualitySys()
+    aqiPalette = aqsAPI.palette
 
     # Deploy
     prologue()

@@ -17,7 +17,6 @@ import pandas as pd
 import progressbar
 from bs4 import BeautifulSoup, Tag
 from matplotlib.axes import Axes
-from matplotlib.patches import Rectangle
 
 from airnow import AirNow, EpaAQS
 from console import Console
@@ -75,34 +74,6 @@ def aqiTrackerByYear(singleYrDf: pd.DataFrame, singleYr: int, **kwargs):
                  fontsize=13, fontweight='bold')
 
 
-def aqiDistribution(singleYrDf: pd.DataFrame, singleYr: int, **kwargs):
-    fig = plt.figure(tight_layout=True)
-    fig.set_size_inches(8, 6)
-    gs = gridspec.GridSpec(7, 2)
-
-    monthTileAx = fig.add_subplot(gs[:3, :])
-    pollutantAx = fig.add_subplot(gs[3:6, :1])
-    scaleAx = fig.add_subplot(gs[6:, :])
-
-    categorizedBar(pollutantAx, singleYrDf,
-                   'Defining Parameter', 'Level', 20)
-    categorizedBar(monthTileAx, singleYrDf, 'Month', 'Level', 7)
-    aqiLegend(scaleAx)
-
-    monthTileAx.set_xticklabels(singleYrDf.index.unique().strftime('%b'))
-    # pollutantAx.set_ylabel('Day Count of AQI Level', **kwargs)
-
-    title = 'AQI Cumulative Days by {}'
-    monthTileAx.set_xlabel(title.format('Month'), **kwargs)
-    pollutantAx.set_xlabel(title.format(
-        'Primary Pollutant'), **kwargs)
-    scaleAx.set_xlabel('Air Quality Index (AQI) Categorization', **kwargs)
-
-    fig.suptitle('Air Quality Time Series Analysis of Air Quality '
-                 f'in {console.city}, {console.state} ({singleYr})',
-                 fontsize=13, fontweight='bold')
-
-
 def dailyAqiPlot(ax: Axes, sAQI: pd.Series, yr: int):
     moving = 7
     lagging = 14
@@ -153,6 +124,34 @@ def fmtDateAxis(ax: Axes, s: pd.Series):
     ax.tick_params(axis='both', labelsize=8)
     ax.tick_params(axis='x', rotation=15)
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
+
+
+def aqiDistribution(singleYrDf: pd.DataFrame, singleYr: int, **kwargs):
+    fig = plt.figure(tight_layout=True)
+    fig.set_size_inches(8, 6)
+    gs = gridspec.GridSpec(7, 2)
+
+    monthTileAx = fig.add_subplot(gs[:3, :])
+    pollutantAx = fig.add_subplot(gs[3:6, :1])
+    scaleAx = fig.add_subplot(gs[6:, :])
+
+    categorizedBar(pollutantAx, singleYrDf,
+                   'Defining Parameter', 'Level', 20)
+    categorizedBar(monthTileAx, singleYrDf, 'Month', 'Level', 7)
+    aqiLegend(scaleAx)
+
+    monthTileAx.set_xticklabels(singleYrDf.index.unique().strftime('%b'))
+    # pollutantAx.set_ylabel('Day Count of AQI Level', **kwargs)
+
+    title = 'AQI Cumulative Days by {}'
+    monthTileAx.set_xlabel(title.format('Month'), **kwargs)
+    pollutantAx.set_xlabel(title.format(
+        'Primary Pollutant'), **kwargs)
+    scaleAx.set_xlabel('Air Quality Index (AQI) Categorization', **kwargs)
+
+    fig.suptitle('Air Quality Time Series Analysis of Air Quality '
+                 f'in {console.city}, {console.state} ({singleYr})',
+                 fontsize=13, fontweight='bold')
 
 
 def categorizedBar(ax: Axes, df: pd.DataFrame, xField: str, yField: str,

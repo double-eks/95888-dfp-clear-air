@@ -150,7 +150,7 @@ def historicAQI(anotherCity: bool = False):
 
 def airstatsPage(firstBrowser: bool = False):
     if (firstBrowser):
-        requestAQS()
+        requestAQS(2019)
     airstatsMenu.content(firstBrowser)
     response = console.prompt(answers=airstatsMenu.features, menuNavOn=True)
     if (response.lower() == 'h'):

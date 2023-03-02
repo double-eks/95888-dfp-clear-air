@@ -140,6 +140,8 @@ class EpaAQS():
     def initLegendDf(self):
         result = {
             'Color': ['#00e400', '#ffff00', '#ff7e00', '#ff0000', '#8f3f97', '#7e0023'],
+            'Monochrome': ['#FFDCC2', '#FFC599', '#DA7E37',
+                           '#C06722', '#8F3E00', '#713200'],
             'Bottom': [0, 50, 100, 150, 200, 300],
             'Cap': [50, 100, 150, 200, 300, 500],
             'Category': ['Good', 'Moderate', 'Unhealthy for Sensitive Groups',

@@ -11,7 +11,7 @@ import requests
 from matplotlib.axes import Axes
 
 
-class EpaAqs():
+class AirQualitySys():
     def __init__(self, city: str, state: str) -> None:
         self.url = 'https://aqs.epa.gov/aqsweb/airdata/daily_aqi_by_cbsa_{}.zip'
         self.initRequest(city, state)

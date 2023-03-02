@@ -26,7 +26,8 @@ from bs4 import BeautifulSoup, Tag
 from matplotlib.axes import Axes
 
 from airnow import AirNow
-from asthmaindicator import cdcAPI
+from airqualitysys import AirQualitySys
+from asthmaindicator import AsthmaIndicator
 from console import Console
 
 # ============================================================================ #
@@ -231,7 +232,7 @@ if __name__ == "__main__":
 
     # API requesting
     console.loading(f'CDC API for asthma indicators in {console.state}')
-    asthmaAPI = cdcAPI(console.state)
+    asthmaAPI = AsthmaIndicator(console.state)
     airnowAPI = AirNow()
 
     # Deploy

@@ -9,7 +9,7 @@ import pandas as pd
 from sodapy import Socrata
 
 
-class cdcAPI:
+class AsthmaIndicator:
 
     def __init__(self, state: str):
         self.start, self.end = 2011, 2020

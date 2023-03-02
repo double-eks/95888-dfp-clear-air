@@ -37,6 +37,28 @@ def webScraping(url: str) -> BeautifulSoup:
     return BeautifulSoup(html.read(), "lxml")
 
 
+def introPage():
+    brief = '{}\t{}'.format(console.location,
+                            console.today.strftime('%a, %b %d, %Y, %I:%M %p'))
+    aqiIntroTag = webScraping(airNowGov).find(
+        'div', attrs={'class': 'container related-announcements-container pull-left'})
+    aqiIntro = aqiIntroTag.text.strip()
+    console.header('WELCOME to ClearAir for Better Asthma Management')
+    console.header(brief, sub=True)
+    console.para(aqiIntro, preIndent=True)
+    # console.requesting(f'AirNow API for a quick view of AQI in {console.city}')
+    current = airNowAPI.getCurrByZip(console.zip)
+    forecasting = airNowAPI.getForecastByZip(console.zip,
+                                             console.today + pd.Timedelta(days=1))
+    columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
+    masterTable = pd.concat([current[columns], forecasting[columns]])
+    # console.requested()
+    console.table(masterTable)
+
+
+def homepage(new: bool = False):
+    return
+
 def findSubItem(tag: Tag, itemTag: str, itemName: str) -> Tag:
     for subTag in tag.find_all_next(itemTag):
         if (subTag.text.strip().lower() == itemName.lower()):
@@ -139,8 +161,10 @@ def homepage(new: bool = False):
 
 
 if __name__ == "__main__":
-
     console = Console()
+
+    airNowGov = 'https://www.airnow.gov/aqi/'
+    airNowAPI = AirNow()
 
     # Web scraping url
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
@@ -148,8 +172,5 @@ if __name__ == "__main__":
     epa = webScraping(epaURL)
     nchc = webScraping(nchcURL)
 
-    # API
-    asthmaAPI = cdcAPI(console.state)
-    console.loading(f'CDC API for asthma indicators in {console.state}')
-    asthmaStatsPage()
-    asthmaTriggerPage()
+    introPage()
+    

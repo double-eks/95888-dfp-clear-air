@@ -1,10 +1,9 @@
 import os
 
-import numpy as np
-
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from sodapy import Socrata
 

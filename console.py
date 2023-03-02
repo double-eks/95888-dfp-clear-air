@@ -13,11 +13,9 @@ class Console:
     _LINE_LENGTH = 80
 
     def __init__(self) -> None:
-        # print('Hello\tthere are 2 intake questions before a go... Please')
         # self.zip = self.prompt(
         #     question='your 5-digit ZIP Code', answerPattern=r'\d{5}')
         # self.city, self.state = self.lookUpCityState()
-        # self.adult = True if (self.adult == 'Y') else False
         self.today = datetime.now()
         # # TODO >>> Placeholder
         self.zip = '15213'
@@ -39,39 +37,40 @@ class Console:
                answers: list = [], answerRequired: bool = True,
                menuNavOn: bool = False, quitButtonOn: bool = True):
         if (question):
-            menuInfo = question
+            optList = [question]
         else:
             optList = [self.formattedOption('number keys',
                                             'to browser Features')]
-            if (menuNavOn):
-                optList.append(f'{self.formattedChoice("H")} for Home Menu')
-            if (quitButtonOn):
-                optList.append(f'{self.formattedChoice("Q")} to quit ClearAir')
-            menuInfo = ' | '.join(optList) + '  (case insensitive)'
+        if (menuNavOn):
+            optList.append(f'{self.formattedChoice("H")} for Home Menu')
+        if (quitButtonOn):
+            optList.append(f'{self.formattedChoice("Q")} to quit ClearAir')
+        menuInfo = ' | '.join(optList)
+        if (not question):
+            menuInfo += '  (case insensitive)'
         print(self.formattedChoice('ENTER') + '\t' + menuInfo)
         response = input('\u001B[34m(^_^)\u001B[0m\t')
         if (answerRequired):
             while True:
-                if (question != ''):  # Protect short question from home and quit
+                if (answerPattern != ''):  # Protect short question from home and quit
                     if (re.search(answerPattern, response) != None):
-                        break
-                else:  # Choose one option
-                    checker = [str(i + 1) for i in range(len(answers))]
-                    if (menuNavOn) and (response.upper() == 'H'):
-                        break
-                    if (response.upper() == 'Q'):
-                        quit()
-                    elif (response.upper() in checker):
-                        break
+                        return response
+                checker = [str(i + 1) for i in range(len(answers))]
+                if (menuNavOn) and (response.upper() == 'H'):
+                    return response
+                if (quitButtonOn) and (response.upper() == 'Q'):
+                    quit()
+                elif (response in checker):
+                    return response
                 response = input(
                     '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again ')
-        return response
 
     def checkpoint(self, message: str = ''):
         template = 'Press any keys to continue'
         if (message != ''):
             template = f'{message} {template}'
-        self.prompt(question=template, answerRequired=False)
+        self.prompt(question=template, answerRequired=False,
+                    menuNavOn=False, quitButtonOn=False)
 
     def formattedChoice(self, s: str):
         return '\u001B[1m\u001B[4m{}\u001B[0m'.format(s)
@@ -107,7 +106,7 @@ class Console:
         print('')
         for i in range(len(choices)):
             choice = self.formattedOption(i + 1, choices[i])
-            print(' ' * 10 + choice)
+            print(f"{' '*5}\t" + choice)
         print('')
 
     def title(self, message: str):

@@ -79,23 +79,3 @@ class AirNow():
                   '\u001B[1;35m{}\u001B[0m', '\u001B[1;4;35m{}\u001B[0m']
         self.legend = pd.DataFrame(colors,
                                    columns=['color'])
-        ozone = ["It's a great day to be active outside.",
-
-                 "Unusually sensitive people consider reducing prolonged or "
-                 "heavy outdoor exertion, and watch for symptoms such as coughing or "
-                 "shortness of breath. These are signs to take it easier.\n"
-                 "For everyone else, it's a good day to be active outside.",
-
-                 'People with asthma should follow their asthma action plans and '
-                 'keep quick-relief medicine handy.\n'
-                 'Sensitive groups reduce prolonged or heavy outdoor exertion, '
-                 'take more breaks, do less intense activities, watch for symptoms '
-                 'such as coughing or shortness of breath, and schedule outdoor '
-                 'activities in the morning when ozone is lower.',
-
-                 'People with asthma keep quick-relief medicine handy.\n'
-                 'Sensitive groups avoid prolonged or heavy outdoor exertion, '
-                 'schedule outdoor activities in the morning when ozone is lower. '
-                 'and consider moving activities indoors.\n'
-                 'Everyone else reduces prolonged or heavy outdoor exertion. Take more breaks, do less intense activities. Schedule outdoor activities in the morning when ozone is lower. '
-                 ]

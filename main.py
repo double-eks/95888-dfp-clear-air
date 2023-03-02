@@ -25,7 +25,7 @@ from bs4 import BeautifulSoup, Tag
 from airnow import AirNow
 from airqualitysys import AirQualitySys, aqiTrackerByYear
 from asthmaindicator import AsthmaIndicator
-from console import Console
+from console import Console, ZipCityState
 
 # ============================================================================ #
 # Home
@@ -52,8 +52,8 @@ def prologue():
     cardClass = 'card mb-3'
     cardHeaderClass = 'bg-primary'
     # UI output
-    console.para(asthmaIntro, preIndent=True, postIndent=True)
-    console.checkpoint('Here are some asthma FastFacts...')
+    console.para(asthmaIntro, preIndent=True)
+    console.chapter('US Asthma FastFacts')
     # Asthma FastFacts
     for card in nchc.find_all(cardTag, attrs={attr: cardClass}):
         header = card.find_next('div')
@@ -62,7 +62,10 @@ def prologue():
             for fact in card.find_all('li'):
                 console.bullet(fact.text.strip())
     print('')
-    console.checkpoint()
+    response = console.prompt(question='your 5-digit ZIP Code',
+                              answerPattern=r'\d{5}')
+    setUser = ZipCityState(response)
+    return setUser
 
 
 # ============================================================================ #
@@ -70,28 +73,65 @@ def prologue():
 # ============================================================================ #
 
 
-def airnowPage():
-    # Intro para
-    aqiIntroTag = airnowPortal.find(
-        'div', attrs={'class': 'container related-announcements-container pull-left'})
-    aqiIntro = aqiIntroTag.text.strip()
-    console.para(aqiIntro, postIndent=True)
-    # Current and Forecasting AQI
-    console.loading(f'AirNow for a quick view of AQI in {console.city}')
-    current = airnowAPI.getCurrByZip(console.zip)
-    forecasting = airnowAPI.getForecastByZip(console.zip,
+def airnowPage(firstBrowser: bool = False):
+    if (firstBrowser):
+        aqiIntroTag = airnowPortal.find(
+            'div', attrs={'class': 'container related-announcements-container pull-left'})
+        aqiIntro = aqiIntroTag.text.strip()
+        console.para(aqiIntro, postIndent=True)
+    else:
+        console.divider()
+    features = [
+        "Current AQI Brief of My City",
+        "Past AQI Record of My City\n",
+        'Current AQI brief of Another City',
+        'Past AQI Record of Another City',
+    ]
+    # UI output
+    console.menuChoices('Local Air Quality Information',
+                        features, menuLevel=2)
+    response = console.prompt(answers=features, menuNavOn=True)
+    if (response.lower() == 'h'):
+        homepage()
+    elif (response == '1'):
+        currentAQI()
+    elif (response == '2'):
+        historicAQI()
+        return
+    elif (response == '3'):
+        currentAQI(anotherCity=True)
+    elif (response == '4'):
+        historicAQI(anotherCity=True)
+
+
+def currentAQI(anotherCity: bool = False):
+    if (anotherCity):
+        response = console.prompt(question='your 5-digit ZIP Code',
+                                  answerPattern=r'\d{5}')
+        locator = ZipCityState(response)
+    else:
+        locator = user
+    console.loading(f'AirNow for AQI Brief of {locator.city}')
+    current = airnowAPI.getCurrByZip(locator.zip)
+    forecasting = airnowAPI.getForecastByZip(locator.zip,
                                              console.today + pd.Timedelta(days=1))
+    console.requested()
+    console.title(locator.location, split=True)
     if (isinstance(current, pd.DataFrame)) and \
        (isinstance(forecasting, pd.DataFrame)):
         columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
         masterTable = pd.concat([current[columns], forecasting[columns]])
-        console.requested()
         console.table(masterTable)
-    # Ask for historical data
-    historicAQI()
+    airnowPage()
 
 
-def historicAQI():
+def historicAQI(anotherCity: bool = False):
+    if (anotherCity):
+        response = console.prompt(question='your 5-digit ZIP Code',
+                                  answerPattern=r'\d{5}')
+        locator = ZipCityState(response)
+    else:
+        locator = user
     response = console.prompt(
         question="yyyy-mm-dd (don't forget dash line) to check historical AQI of a specific day",
         answerPattern=r'^\d{4}-\d{2}-\d{2}$', menuNavOn=True, quitButtonOn=False)
@@ -99,12 +139,13 @@ def historicAQI():
         homepage()
     else:
         console.loading(
-            f"AirNow for {console.city} AQI on {response}")
-        requestedDay = airnowAPI.getHistByZip(console.zip, response)
+            f"AirNow for {locator.city} AQI on {response}")
+        requestedDay = airnowAPI.getHistByZip(locator.zip, response)
         if (isinstance(requestedDay, pd.DataFrame)):
             infoColumns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
+            console.title(locator.location, split=True)
             console.table(requestedDay.loc[:, infoColumns])
-        historicAQI()
+        airnowPage()
 
 
 # ============================================================================ #
@@ -118,7 +159,7 @@ def requestAQS(start: int = 2010, end: int = 2021):
     dfList = []
     for yr in progressbar.progressbar(range(start, end + 1),
                                       widgets=widget, redirect_stdout=True):
-        df = aqsAPI.requestSingleYr(yr, console.city, console.state)
+        df = aqsAPI.requestSingleYr(yr, user.city, user.state)
         dfList.append(df)
     return pd.concat(dfList)
 
@@ -127,34 +168,34 @@ def aqiStatsPage():
     dfs = requestAQS(start=2021)
     yrDf = dfs.loc[(dfs.index.year == 2021), :]
     yr = 2021
-    aqiTrackerByYear(yrDf, yr, console.city, console.state,
+    aqiTrackerByYear(yrDf, yr, user.city, user.state,
                      fontweight='bold', fontsize=10)
     return
 
 
 # ============================================================================ #
-# Feature 3 - Asthma Stats & Triggers
+# Feature 3 & 4 - Asthma Stats & Triggers
 # ============================================================================ #
 
 
 def asthmaStatsPage():
+    console.loading(f'CDC API for asthma indicators in {user.state}')
+    asthmaAPI = AsthmaIndicator(user.state)
+    console.requested()
     asthmaAPI.trend()
     console.checkpoint('More demographic statistics...')
     asthmaAPI.demography()
     homepage()
 
 
-# ============================================================================ #
-# Feature 4 - Trigger Introduction
-# ============================================================================ #
-
-
-def navTrigger():
-    # UI output
+def triggerPage(firstBrowser: bool = False):
+    if (not firstBrowser):
+        console.divider()
     triggersListTag = epa.find('article').find('ul')
     triggersList = [s for s in triggersListTag.stripped_strings]
-    console.para('Most common triggers:')
-    console.multiChoice(triggersList)
+
+    console.menuChoices('Most Common Triggers',
+                        triggersList, menuLevel=2)
     response = console.prompt(answers=triggersList, menuNavOn=True)
     if (response.lower() == 'h'):
         homepage()
@@ -179,7 +220,6 @@ def triggerReport(triggersListTag: Tag, triggersList: list, triggerIndex: int):
     about, action = header.find_all_next('h3', limit=2)
     actionDetail = about.find_next('ul')
     # Report the About part
-    console.separator()
     console.title(about.text)
     for tag in about.find_all_next():
         if ('h' in tag.name):
@@ -193,8 +233,7 @@ def triggerReport(triggersListTag: Tag, triggersList: list, triggerIndex: int):
         if (isValidText(detail)):
             console.bullet(detail)
     # Show options
-    console.separator()
-    navTrigger()
+    triggerPage()
 
 
 def isValidText(text: str):
@@ -209,44 +248,49 @@ def isValidText(text: str):
 # ============================================================================ #
 
 
-def homepage(new: bool = False):
+def homepage(firstBrowser: bool = False):
     # Feature menu
     features = [
-        "Is air quality today good? Know what you're breathing in real-time",
-        'How about the past and the future? Dig into the AQI data',
+        "Is air quality good today? Know what you're breathing in real-time",
+        'How about the past and the future? Dig into AQI data',
         'Who does asthma really affect? Unlock the demographic insights',
         'Stay informed about your asthma triggers and learn how to avoid them'
     ]
-    brief = '{}\t{}'.format(console.location,
-                            console.today.strftime('%a, %b %d, %Y, %I:%M %p'))
     # UI output
-    if (new):
-        console.header('WELCOME to AirWise Asthma')
+    if (firstBrowser):
+        console.chapter(
+            'WELCOME to AirWise Asthma',
+            console.today.strftime('%a, %b %d, %Y, %I:%M %p'),
+            user.location,
+        )
     else:
-        console.separator()
-    console.header(brief, sub=True)
-    console.multiChoice(features)
+        console.divider()
+    console.menuChoices('For Better Asthma Management', features)
     response = console.prompt(answers=features)
-    # Menu
     if (response == '1'):
-        console.header('Air Quality Index from CDC AirNow')
-        airnowPage()
+        console.chapter('Air Quality Index (AQI) Powered by CDC AirNow')
+        airnowPage(firstBrowser=True)
     elif (response == '2'):
-        console.header('AQI Time Series Analysis')
+        console.chapter('AQI Time Series Analysis')
         aqiStatsPage()
         return
     elif (response == '3'):
-        console.header('Significant Asthma Statistics')
+        console.chapter('Significant Asthma Statistics')
         asthmaStatsPage()
     elif (response == '4'):
-        console.header('Asthma Triggers © EPA')
-        navTrigger()
+        console.chapter('Asthma Triggers © EPA')
+        triggerPage(firstBrowser=True)
 
 
 if __name__ == "__main__":
-    console = Console()
 
-    # Web scraping url
+    # Initialize objects
+    console = Console()
+    airnowAPI = AirNow()
+    aqsAPI = AirQualitySys()
+    aqiPalette = aqsAPI.palette
+
+    # Request web scraping
     epaURL = 'https://www.epa.gov/asthma/asthma-triggers-gain-control'
     nchcURL = 'https://www.cdc.gov/nchs/fastats/asthma.htm'
     airNowGov = 'https://www.airnow.gov/aqi/'
@@ -254,14 +298,8 @@ if __name__ == "__main__":
     nchc = webScraping(nchcURL)
     airnowPortal = webScraping(airNowGov)
 
-    # API requesting
-    console.loading(f'CDC API for asthma indicators in {console.state}')
-    asthmaAPI = AsthmaIndicator(console.state)
-    airnowAPI = AirNow()
-    aqsAPI = AirQualitySys()
-    aqiPalette = aqsAPI.palette
-
     # Deploy
-    # prologue()
-    homepage(True)
+    # user = prologue()
+    user = ZipCityState('15213')
+    homepage(firstBrowser=True)
     plt.close('all')

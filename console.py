@@ -7,28 +7,18 @@ from bs4 import BeautifulSoup
 from pandas import DataFrame
 
 
-class Console:
+class ZipCityState:
+    def __init__(self, zipcode: str) -> None:
+        self.setUser(zipcode)
+        pass
 
-    _PLACEHOLDER = 'https://secure.shippingapis.com/ShippingAPI.dll?API=CityStateLookup&XML='
-    _API_ID = '134CARNE2141'
-    _LINE_LENGTH = 80
-
-    def __init__(self) -> None:
-        # self.zip = self.prompt(
-        #     question='your 5-digit ZIP Code', answerPattern=r'\d{5}')
-        # self.city, self.state = self.lookUpCityState()
-        self.today = datetime.now()
-        self.zip = '15213'
+    def setUser(self, zipcode: str):
+        self.zip = zipcode
         self.city, self.state = self.lookUpCityState()
         self.city = self.city.capitalize()
         self.state = self.state.upper()
         self.location = ', '.join([self.city, self.state, self.zip])
-        # print(f"User from {self.location}, let's have fun with ClearAir!\n")
-        # # TODO <<< Placeholder
-        self.widget = ['\x1b[3m{} API \x1b[0m',
-                       progressbar.Bar(marker='>'),
-                       progressbar.ETA(), '  ',
-                       progressbar.Percentage()]
+        return self.location
 
     def lookUpCityState(self):
         xml = '<CityStateLookupRequest USERID="{}"><ZipCode ID="0"><Zip5>{}</Zip5></ZipCode></CityStateLookupRequest>'
@@ -36,6 +26,22 @@ class Console:
         response = requests.get(url)
         text = BeautifulSoup(response.text, features="xml")
         return text.find('City').text, text.find('State').text
+
+
+class Console:
+
+    _PLACEHOLDER = 'https://secure.shippingapis.com/ShippingAPI.dll?API=CityStateLookup&XML='
+    _API_ID = '134CARNE2141'
+    _LINE_LENGTH = 80
+
+    def __init__(self) -> None:
+        # print(f"User from {self.location}, let's have fun with ClearAir!\n")
+        self.today = datetime.now()
+        self.widget = ['\x1b[3m{} API \x1b[0m',
+                       progressbar.Bar(marker='>'),
+                       progressbar.ETA(), '  ',
+                       progressbar.Percentage()]
+        pass
 
     def prompt(self, question: str = '', answerPattern: str = '',
                answers: list = [], answerRequired: bool = True,
@@ -90,31 +96,37 @@ class Console:
         print(fmtBar)
 
     def requested(self):
-        self.checkpoint('Data loaded...')
+        self.checkpoint('Data retrieved...')
 
-    def header(self, message: str, sub: bool = False):
+    def chapter(self, message: str, *args):
         headerFmt = '\u001B[1m{}\u001B[0m'
-        separator = ('-' * (len(message) + 12)).center(Console._LINE_LENGTH)
+        separator = '-' * Console._LINE_LENGTH
         title = message.center(Console._LINE_LENGTH)
-        if (sub):
-            print(headerFmt.format(title))
-        else:
-            print(headerFmt.format('\n' + separator))
-            print(headerFmt.format(title))
-            print(headerFmt.format(separator + '\n'))
+        print(headerFmt.format('\n' + separator))
+        print(headerFmt.format(title))
+        print(headerFmt.format(separator))
+        for arg in args:
+            print(arg)
+        print('')
 
-    def separator(self):
+    def divider(self):
         print(f"\n{'.' * Console._LINE_LENGTH}\n")
 
-    def multiChoice(self, choices: list):
-        print('')
+    def menuChoices(self, bar: str, choices: list, menuLevel: int = 1):
+        print(bar + ':\n')
+        indent = ' ' * 5 + '\t'
         for i in range(len(choices)):
             choice = self.formattedOption(i + 1, choices[i])
-            print(f"{' '*5}\t" + choice)
+            choiceLine = f"{indent*menuLevel}{choice}"
+            print(choiceLine)
         print('')
 
-    def title(self, message: str):
-        print('\n\u001B[4m{}\u001B[0m'.format(message))
+    def title(self, message: str, split: bool = False):
+        if (split):
+            self.divider()
+        else:
+            print('')
+        print('\u001B[4m{}\u001B[0m'.format(message))
 
     def bullet(self, message: str):
         print('- {}'.format(message))
@@ -130,23 +142,3 @@ class Console:
     def table(self, df: DataFrame):
         print('')
         print(df.to_markdown(index=False))
-        print('')
-
-    def multiLines(self, message: str, indent: int = 0, bullet: str = '-'):
-        words = message.split()
-        lines = []
-        if (indent == 0):
-            prefix = ''
-            currLine = ''
-        else:
-            prefix = ' ' * (indent + 2)
-            currLine = f'  {bullet} '
-
-        for word in words:
-            if (len(currLine) + len(word) <= Console._LINE_LENGTH):
-                currLine += f'{word} '
-            else:
-                lines.append(currLine)
-                currLine = f'{prefix}{word} '
-        lines.append(currLine)
-        return lines

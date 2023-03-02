@@ -152,25 +152,57 @@ def historicAQI(anotherCity: bool = False):
 # Feature 2 - Air Quality Stats
 # ============================================================================ #
 
+def airstatsPage(firstBrowser: bool = False):
+    if (firstBrowser):
+        requestAQS()
+    else:
+        console.divider()
+    features = [
+        "Annual Air Quality Tracker",
+        'Time Series Air Quality Plot',
+        "Multiscale Grouped Bar Chat",
+        'AQI Calendar Heat Map',
+    ]
+    # UI output
+    console.menuChoices('Air Quality Analysis Suite',
+                        features, menuLevel=2)
+    response = console.prompt(answers=features, menuNavOn=True)
+    if (response.lower() == 'h'):
+        homepage()
+    elif (response == '1'):
+        console.para('\n\n!!!!!\tDEMO LIMITS - please pick up one year from 2016-2021 '
+                     'for demo as other 4-digit input may raise error')
+        response = console.prompt(
+            question="yyyy to generate an annual trend plot",
+            answerPattern=r'^\d{4}$', quitButtonOn=False)
+        yr = response
+        i = airYrContainer.index(yr)
+        yrDf = airDatabase[i]
+        aqiTrackerByYear(yrDf, yr, user.city, user.state,
+                         fontweight='bold', fontsize=10)
+    # elif (response == '2'):
+    #     historicAQI()
+    #     return
+    elif (response == '3'):
+        multiGroupBar(user.city, user.state)
+    # elif (response == '4'):
+    #     historicAQI(anotherCity=True)
+
+
+def multiGroupBar(city: str, state: str):
+
+    return
+
 
 def requestAQS(start: int = 2010, end: int = 2021):
-    widget = copy.copy(console.widget)
-    widget[0] = widget[0].format('EPA AQS')
-    dfList = []
-    for yr in progressbar.progressbar(range(start, end + 1),
-                                      widgets=widget, redirect_stdout=True):
-        df = aqsAPI.requestSingleYr(yr, user.city, user.state)
-        dfList.append(df)
-    return pd.concat(dfList)
-
-
-def aqiStatsPage():
-    dfs = requestAQS(start=2021)
-    yrDf = dfs.loc[(dfs.index.year == 2021), :]
-    yr = 2021
-    aqiTrackerByYear(yrDf, yr, user.city, user.state,
-                     fontweight='bold', fontsize=10)
-    return
+    if (len(airDatabase) == 0):
+        widget = copy.copy(console.widget)
+        widget[0] = widget[0].format('EPA AQS')
+        for yr in progressbar.progressbar(range(start, end + 1),
+                                          widgets=widget, redirect_stdout=True):
+            df = aqsAPI.requestSingleYr(yr, user.city, user.state)
+            airDatabase.append(df)
+            airYrContainer.append(str(yr))
 
 
 # ============================================================================ #
@@ -252,7 +284,7 @@ def homepage(firstBrowser: bool = False):
     # Feature menu
     features = [
         "Is air quality good today? Know what you're breathing in real-time",
-        'How about the past and the future? Dig into AQI data',
+        'How about the past and the future? Dig into air quality data',
         'Who does asthma really affect? Unlock the demographic insights',
         'Stay informed about your asthma triggers and learn how to avoid them'
     ]
@@ -271,8 +303,8 @@ def homepage(firstBrowser: bool = False):
         console.chapter('Air Quality Index (AQI) Powered by CDC AirNow')
         airnowPage(firstBrowser=True)
     elif (response == '2'):
-        console.chapter('AQI Time Series Analysis')
-        aqiStatsPage()
+        console.chapter('Air Quality Analysis & Statistics')
+        airstatsPage(firstBrowser=True)
         return
     elif (response == '3'):
         console.chapter('Significant Asthma Statistics')
@@ -288,6 +320,8 @@ if __name__ == "__main__":
     console = Console()
     airnowAPI = AirNow()
     aqsAPI = AirQualitySys()
+    airDatabase = []
+    airYrContainer = []
     aqiPalette = aqsAPI.palette
 
     # Request web scraping
@@ -301,5 +335,6 @@ if __name__ == "__main__":
     # Deploy
     # user = prologue()
     user = ZipCityState('15213')
-    homepage(firstBrowser=True)
+    airstatsPage(True)
+    # homepage(firstBrowser=True)
     plt.close('all')

@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 class AirQualitySys():
     def __init__(self) -> None:
         self.url = 'https://aqs.epa.gov/aqsweb/airdata/daily_aqi_by_cbsa_{}.zip'
+        self.yrBulk = []
         self.initLegendDf()
 
     def requestSingleYr(self, yr: int, city: str, state: str):
@@ -84,7 +85,7 @@ def setFrame(ax: Axes, *args):
 # ============================================================================ #
 
 
-def aqiTrackerByYear(yrDf: pd.DataFrame, yr: int, city: str, state: str, **kwargs):
+def aqiTrackerByYear(yrDf: pd.DataFrame, yr: str, city: str, state: str, **kwargs):
     fig = plt.figure(tight_layout=True)
     fig.set_size_inches(8, 6)
     gs = gridspec.GridSpec(2, 2)
@@ -108,7 +109,7 @@ def aqiTrackerByYear(yrDf: pd.DataFrame, yr: int, city: str, state: str, **kwarg
     plt.show()
 
 
-def dailyAqiPlot(ax: Axes, sAQI: pd.Series, yr: int):
+def dailyAqiPlot(ax: Axes, sAQI: pd.Series, yr: str):
     moving = 7
     lagging = 14
     movingAvg = sAQI.rolling(window=moving).mean()

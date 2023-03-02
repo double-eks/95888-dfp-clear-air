@@ -13,20 +13,17 @@ import os
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
+import copy
 import re
 from urllib.request import urlopen
 
-import matplotlib.dates as mdates
-import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import progressbar
 from bs4 import BeautifulSoup, Tag
-from matplotlib.axes import Axes
 
 from airnow import AirNow
-from airqualitysys import AirQualitySys
+from airqualitysys import AirQualitySys, aqiTrackerByYear
 from asthmaindicator import AsthmaIndicator
 from console import Console
 
@@ -108,6 +105,38 @@ def historicAQI():
             infoColumns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
             console.table(requestedDay.loc[:, infoColumns])
         historicAQI()
+
+
+# ============================================================================ #
+# Feature 2 - Air Quality Stats
+# ============================================================================ #
+
+
+def requestAQS(start: int = 2010, end: int = 2021):
+    widget = copy.copy(console.widget)
+    widget[0] = widget[0].format('EPA AQS')
+    dfList = []
+    for yr in progressbar.progressbar(range(start, end + 1),
+                                      widgets=widget, redirect_stdout=True):
+        df = aqsAPI.requestSingleYr(yr, console.city, console.state)
+        dfList.append(df)
+    return pd.concat(dfList)
+
+
+def aqiStatsPage():
+    dfs = requestAQS(start=2021)
+    yrDf = dfs.loc[(dfs.index.year == 2021), :]
+    yr = 2021
+    aqiTrackerFig = aqiTrackerByYear(yrDf, yr, fontweight='bold', fontsize=10)
+    aqiTrackerFig.suptitle('Air Quality Time Series Analysis of Air Quality '
+                           f'in {console.city}, {console.state} ({yr})',
+                           fontsize=13, fontweight='bold')
+
+    return
+    aqiDistribution(singleYr, 2021, fontweight='bold', fontsize=10)
+    # ax.set_xlabel('Dates')
+    # aqsAPI.drawTrendPlot(ax, yrDf)
+    # homepage()
 
 
 # ============================================================================ #
@@ -234,10 +263,10 @@ if __name__ == "__main__":
     console.loading(f'CDC API for asthma indicators in {console.state}')
     asthmaAPI = AsthmaIndicator(console.state)
     airnowAPI = AirNow()
-    aqsAPI = AirQualitySys(console.city, console.state)
+    aqsAPI = AirQualitySys()
     # aqiPalette = aqsAPI.palette
 
     # Deploy
-    prologue()
-    homepage(True)
+    # prologue()
+    # homepage(True)
     plt.close('all')

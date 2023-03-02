@@ -10,6 +10,8 @@ from pandas import DataFrame
 class ZipCityState:
     def __init__(self, zipcode: str) -> None:
         self.setUser(zipcode)
+        print(
+            f"\nHello! User from {self.location}, have a blast!\n")
         pass
 
     def setUser(self, zipcode: str):
@@ -35,7 +37,6 @@ class Console:
     _LINE_LENGTH = 80
 
     def __init__(self) -> None:
-        # print(f"User from {self.location}, let's have fun with ClearAir!\n")
         self.today = datetime.now()
         self.widget = ['\x1b[3m{} API \x1b[0m',
                        progressbar.Bar(marker='>'),
@@ -49,8 +50,8 @@ class Console:
         if (question):
             optList = [question]
         else:
-            optList = [self.formattedOption('number keys',
-                                            'to browser Features')]
+            optList = [
+                f'{self.formattedChoice("number keys")} to browser Features']
         if (menuNavOn):
             optList.append(f'{self.formattedChoice("H")} for Home Menu')
         if (quitButtonOn):
@@ -75,19 +76,15 @@ class Console:
                 response = input(
                     '\u001B[31m[>.<]\u001B[0m\tinvalid input...try again ')
 
+    def formattedChoice(self, s: str):
+        return '\u001B[1m\u001B[4m{}\u001B[0m'.format(s)
+
     def checkpoint(self, message: str = ''):
         template = 'Press any keys to continue'
         if (message != ''):
             template = f'{message} {template}'
         self.prompt(question=template, answerRequired=False,
                     menuNavOn=False, quitButtonOn=False)
-
-    def formattedChoice(self, s: str):
-        return '\u001B[1m\u001B[4m{}\u001B[0m'.format(s)
-
-    def formattedOption(self, option: str, explanation: str):
-        result = self.formattedChoice(option) + ' ' + explanation
-        return result
 
     def loading(self, message: str):
         widget = f' requesting from {message} '
@@ -109,36 +106,47 @@ class Console:
             print(arg)
         print('')
 
-    def divider(self):
-        print(f"\n{'.' * Console._LINE_LENGTH}\n")
-
-    def menuChoices(self, bar: str, choices: list, menuLevel: int = 1):
-        print(bar + ':\n')
-        indent = ' ' * 5 + '\t'
-        for i in range(len(choices)):
-            choice = self.formattedOption(i + 1, choices[i])
-            choiceLine = f"{indent*menuLevel}{choice}"
-            print(choiceLine)
-        print('')
-
     def title(self, message: str, split: bool = False):
         if (split):
-            self.divider()
+            print(f"\n{'.' * Console._LINE_LENGTH}\n")
         else:
             print('')
-        print('\u001B[4m{}\u001B[0m'.format(message))
+        if (message != ''):
+            print('\u001B[1m\u001B[4m{}\u001B[0m'.format(message))
 
     def bullet(self, message: str):
         print('- {}'.format(message))
 
-    def para(self, message: str,
-             preIndent: bool = False, postIndent: bool = False):
-        if (preIndent):
-            print('')
+    def para(self, message: str):
         print(message)
-        if (postIndent):
-            print('')
 
     def table(self, df: DataFrame):
         print('')
         print(df.to_markdown(index=False))
+
+
+class Menu():
+    def __init__(self, name: str, features: list, menuLevel: int = 1) -> None:
+        self.name = name
+        self.features = features
+        self.checked = set()
+        self.level = menuLevel
+        self.prefix = (' ' * 5 + '\t') * menuLevel
+        pass
+
+    def content(self, firstBrowser: bool = False):
+        if (not firstBrowser):
+            print('')
+        print('{}:\n'.format(self.name))
+        for i in range(len(self.features)):
+            checked = '\u001B[4m{}\u001B[0m  {}'
+            unchecked = '\u001B[1m\u001B[4;34m{}\u001B[0m  \u001B[1;34m{}\u001B[0m'
+            feature = self.features[i]
+            no = i + 1
+            if (no in self.checked):
+                template = checked
+            else:
+                template = unchecked
+            result = template.format(i + 1, feature)
+            print(self.prefix + result)
+        print('')

@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 
+import pandas as pd
 import progressbar
 import requests
 from bs4 import BeautifulSoup
@@ -9,6 +10,8 @@ from pandas import DataFrame
 
 class ZipCityState:
     def __init__(self, zipcode: str) -> None:
+        self.database = pd.DataFrame()
+        self.databaseSet = False
         self.setUser(zipcode)
         print(
             f"\nHello! User from {self.location}, have a blast!\n")

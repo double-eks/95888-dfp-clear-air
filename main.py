@@ -2,7 +2,7 @@
 95-888 Data Focused Python
 Spring 2023 Mini 3
 
-Group 9: AirWise 
+Group 9: AirWise
 Xiao Xu
 xiaoxu@andrew.cmu.edu
 
@@ -11,18 +11,19 @@ ps: oringal project name: ClearAir
 
 import os
 
-# logging.basicConfig(level=logging.DEBUG)
-
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"
 
 import copy
 import re
 from urllib.request import urlopen
 
-import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import progressbar
 from bs4 import BeautifulSoup, Tag
+from matplotlib import gridspec
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 
 from airnow import AirNow
 from airqualitysys import AirQualitySys, aqiTrackerByYear
@@ -98,6 +99,7 @@ def airnowPage(firstBrowser: bool = False):
             currentAQI(anotherCity=True)
         elif (response == '4'):
             historicAQI(anotherCity=True)
+        airnowPage()
 
 
 def currentAQI(anotherCity: bool = False):
@@ -118,7 +120,6 @@ def currentAQI(anotherCity: bool = False):
         columns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
         masterTable = pd.concat([current[columns], forecasting[columns]])
         console.table(masterTable)
-    airnowPage()
 
 
 def historicAQI(anotherCity: bool = False):
@@ -141,7 +142,6 @@ def historicAQI(anotherCity: bool = False):
             infoColumns = ['Date', 'Data Type', 'Pollutant', 'AQI', 'Level']
             console.title(locator.location, split=True)
             console.table(requestedDay.loc[:, infoColumns])
-        airnowPage()
 
 
 # ============================================================================ #
@@ -149,8 +149,9 @@ def historicAQI(anotherCity: bool = False):
 # ============================================================================ #
 
 def airstatsPage(firstBrowser: bool = False):
-    if (firstBrowser):
-        requestAQS(2019)
+    if (not user.databaseSet):
+        user.database = requestAQS()
+        user.databaseSet = True
     airstatsMenu.content(firstBrowser)
     response = console.prompt(answers=airstatsMenu.features, menuNavOn=True)
     if (response.lower() == 'h'):
@@ -165,32 +166,148 @@ def airstatsPage(firstBrowser: bool = False):
                 question="yyyy to generate an annual trend plot",
                 answerPattern=r'^\d{4}$', quitButtonOn=False)
             yr = response
-            i = airYrContainer.index(yr)
-            yrDf = airDatabase[i]
-            aqiTrackerByYear(yrDf, yr, user.city, user.state,
-                             fontweight='bold', fontsize=10)
+            yrDf = singleYrDf(response)
+            fig1 = aqiTrackerByYear(yrDf, fontweight='bold', fontsize=10)
+            fig1.suptitle('Air Quality Time Series Analysis of Air Quality '
+                          f'in {user.city}, {user.state} ({yr})',
+                          fontsize=13, fontweight='bold')
+            plt.show()
         elif (response == '2'):
-            homepage()
+            console.para('\n\n!!!!!\tDEMO LIMITS - please pick up one year '
+                         'from 2016-2021 for demo as other 4-digit input may '
+                         'raise error')
+            response = console.prompt(
+                question="yyyy to generate a monthly breakdown",
+                answerPattern=r'^\d{4}$', quitButtonOn=False)
+            cumDayBreakdown(response)
         elif (response == '3'):
-            multiGroupBar(user.city, user.state)
-        elif (response == '4'):
-            homepage()
+            calendarHeatMap()
+        airstatsPage()
 
 
-def multiGroupBar(city: str, state: str):
+def singleYrDf(yrResponse: str):
+    yearIndex = user.database.index.year
+    yearSelected = yearIndex == int(yrResponse)
+    yearDf = user.database.loc[yearSelected, :]
+    return yearDf
 
+
+def cumDayBreakdown(yrResponse: str):
+    fig = plt.figure(tight_layout=True)
+    fig.set_size_inches(8, 6)
+    gs = gridspec.GridSpec(2, 1)
+
+    singYrAx = fig.add_subplot(gs[:1, :])
+    yrsAx = fig.add_subplot(gs[1:, :])
+
+    monthlyCumDays(ax=singYrAx, yr=yrResponse)
+    yearlyCumDays(ax=yrsAx)
+    fig.suptitle('Cumulative Day Breakdown over Time by Category',
+                 fontsize=13, fontweight='bold')
+    plt.show()
+
+
+def monthlyCumDays(ax: Axes, yr: str):
+    yLabelTemplate = '{:>3s}d'
+    yTicks = [i for i in range(0, 31, 5)]
+    ax.grid(True, linestyle='dotted')
+    ax.set_ylim(0, 30)
+    ax.set_yticks(yTicks)
+    ax.set_yticklabels([yLabelTemplate.format(str(i)) if (i > 0) else '0'
+                        for i in yTicks])
+    ax.set_ylabel('Cumulative Days Over Time', fontweight='bold')
+
+    xTickLabels = [date.strftime('%b') for date in
+                   pd.date_range(start='20220101', end='20221231', freq='M')]
+    ax.set_xlim(-0.5, 12.5)
+    ax.set_xticks([i for i in range(12)])
+    ax.set_xticklabels(xTickLabels, ha='left')
+    ax.set_xlabel('Monthly Cumulative Days of Air Quality Index Categories '
+                  f'in {user.city}, {yr}', fontweight='bold')
+    ax.tick_params(labelsize=8)
+    df = singleYrDf(yr)
+    groupedBar(ax=ax, df=df, width=0.2,
+               groupField=df.index.month, subGroupField='Level')
+    ax.legend(title='Air Quality Index Categories', title_fontsize=8,
+              fontsize=8, ncol=6, loc='upper right')
+
+
+def yearlyCumDays(ax: Axes):
+    yLabelTemplate = '{:>3s}d'
+    yTicks = [i for i in range(0, 365, 30)]
+    yTicks[-1] = 365
+    ax.grid(True, linestyle='dotted')
+    ax.set_ylim(0, 365)
+    ax.set_yticks(yTicks)
+    ax.set_yticklabels([yLabelTemplate.format(str(i)) if (i > 0) else '0'
+                        for i in yTicks])
+    ax.set_ylabel('Cumulative Days Over Time', fontweight='bold')
+
+    xTickLabels = user.database.index.year.unique()
+    xTicks = [i for i in range(len(xTickLabels))]
+    ax.set_xticks(xTicks)
+    ax.set_xticklabels(xTickLabels, ha='left')
+    ax.set_xlim(xTicks[0] - 0.5, xTicks[-1] + 1.5)
+    ax.set_xlabel('Annual Cumulative Days of Air Quality Index Categories '
+                  f'from {xTickLabels[0]}-{xTickLabels[-1]}', fontweight='bold')
+    ax.tick_params(labelsize=8)
+    df = user.database
+    groupedBar(ax=ax, df=df, width=0.2,
+               groupField=df.index.year, subGroupField='Level')
+    ax.legend(title='Air Quality Index Categories', title_fontsize=8,
+              fontsize=8, ncol=6, loc='upper right')
+
+
+def groupedBar(ax: Axes, df: pd.DataFrame, width: int,
+               groupField: str, subGroupField: str):
+    reconstruct = df.groupby(groupField)[subGroupField].value_counts()
+    groupedDf = reconstruct.unstack()
+    multiplier = 0
+    x = np.arange(len(groupedDf.index))
+    for col in groupedDf.columns:
+        offset = width * multiplier
+        aqiScale = aqiPalette.Category[col]
+        aqiColor = aqiPalette.Color[col]
+        rect = ax.bar(x + offset, groupedDf[col], width, align='edge',
+                      label=aqiScale, color=aqiColor)
+        ax.bar_label(rect, padding=3, fontsize=6.5)
+        multiplier += 1
+
+
+def calendarHeatMap():
+    years = user.database.index.year.unique()
+    meanDf = user.database.pivot_table(index=user.database.index.month,
+                                       columns=user.database.index.day,
+                                       values='AQI')
+
+    fig, ax = plt.subplots(tight_layout=True, figsize=(8, 4))
+    fig.suptitle(f'AQI Calendar Heat Map of {user.city}'
+                 f'\nMean of Daily AQI from {years[0]}-{years[-1]}',
+                 fontsize=13, fontweight='bold')
+    ax.set_xlabel('Find today and check out next')
+    ax.tick_params(labelsize=8, length=0)
+    ax.set_yticks([i for i in range(12)])
+    ax.set_yticklabels(
+        [date.strftime('%b') for date
+         in pd.date_range(start='20220101', end='20221231', freq='M')]
+    )
+    ax.set_xticks([d for d in range(0, 31)])
+    ax.set_xticklabels([d for d in range(1, 32)], ha='left')
+    heatmap = ax.imshow(meanDf, cmap='RdYlGn_r')
+    fig.colorbar(heatmap, shrink=0.7, label='Daily AQI mean over years')
+    plt.show()
     return
 
 
 def requestAQS(start: int = 2010, end: int = 2021):
-    if (len(airDatabase) == 0):
-        widget = copy.copy(console.widget)
-        widget[0] = widget[0].format('EPA AQS')
-        for yr in progressbar.progressbar(range(start, end + 1),
-                                          widgets=widget, redirect_stdout=True):
-            df = aqsAPI.requestSingleYr(yr, user.city, user.state)
-            airDatabase.append(df)
-            airYrContainer.append(str(yr))
+    widget = copy.copy(console.widget)
+    widget[0] = widget[0].format('EPA AQS')
+    dfList = []
+    for yr in progressbar.progressbar(range(start, end + 1),
+                                      widgets=widget, redirect_stdout=True):
+        df = aqsAPI.requestSingleYr(yr, user.city, user.state)
+        dfList.append(df)
+    return pd.concat(dfList)
 
 
 # ============================================================================ #
@@ -309,7 +426,6 @@ def initMenuFeatures():
     ]
     aqsFeatures = [
         "Annual Air Quality Tracker",
-        'Time Series Air Quality Plot',
         "Multiscale Grouped Bar Chat",
         'AQI Calendar Heat Map',
     ]
@@ -322,8 +438,6 @@ if __name__ == "__main__":
     console = Console()
     airnowAPI = AirNow()
     aqsAPI = AirQualitySys()
-    airDatabase = []
-    airYrContainer = []
     aqiPalette = aqsAPI.palette
 
     # Initialize UI
@@ -332,7 +446,7 @@ if __name__ == "__main__":
                     features=mainFeatures)
     airnowMenu = Menu(name='Local Air Quality Information',
                       features=airnowFeatures, menuLevel=2)
-    airstatsMenu = Menu(name='Air Quality Analysis Suite',
+    airstatsMenu = Menu(name='Air Quality Time Series Analysis Suite',
                         features=aqsFeatures, menuLevel=2)
     triggerMenu = Menu(name='Most Common Triggers',
                        features=[], menuLevel=2)
@@ -347,7 +461,7 @@ if __name__ == "__main__":
     # Deploy
     # user = prologue()
     user = ZipCityState('15213')
-    # airstatsPage(True)
+    currentAQI()
+    quit()
     homepage(firstBrowser=True)
-
     plt.close('all')

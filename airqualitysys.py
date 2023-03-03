@@ -1,3 +1,17 @@
+'''
+Group 9: AirWise
+Xiao Xu
+xiaoxu@andrew.cmu.edu
+
+Filename: airqualitysys.py
+
+Module: AirQualitySys requests, reads and clean downloadable air quality tables
+Functions: mainly for air quality analysis and visualization
+
+95-888 Data Focused Python
+Spring 2023 Mini 3
+'''
+
 import os
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"

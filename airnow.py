@@ -1,3 +1,16 @@
+'''
+Group 9: AirWise
+Xiao Xu
+xiaoxu@andrew.cmu.edu
+
+Filename: airnow.py
+
+Module: AirNow requests daily AQI data from AirNow open API (API keys pre-embedded)
+
+95-888 Data Focused Python
+Spring 2023 Mini 3
+'''
+
 from datetime import datetime
 
 import pandas as pd

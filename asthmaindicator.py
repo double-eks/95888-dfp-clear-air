@@ -1,3 +1,16 @@
+'''
+Group 9: AirWise
+Xiao Xu
+xiaoxu@andrew.cmu.edu
+
+Filename: asthmaindicator.py
+
+Module: AsthmaIndicator specifically uses sodapy.Socrata to request data from CDC API (username / password embedded)
+
+95-888 Data Focused Python
+Spring 2023 Mini 3
+'''
+
 import os
 
 os.environ['MPLCONFIGDIR'] = os.getcwd() + "/configs/"

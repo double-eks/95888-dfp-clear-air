@@ -1,3 +1,18 @@
+'''
+Group 9: AirWise
+Xiao Xu
+xiaoxu@andrew.cmu.edu
+
+Filename: console.py
+
+Module 1: ZipCityState looks up city-state information by Zip code (User ID / API Key embedded)
+Module 2: Console the main object controlling terminal interaction
+Module 3: Menu designed for storing and displaying home menu and each feature menu
+
+95-888 Data Focused Python
+Spring 2023 Mini 3
+'''
+
 import re
 from datetime import datetime
 
@@ -14,7 +29,7 @@ class ZipCityState:
         self.databaseSet = False
         self.setUser(zipcode)
         print(
-            f"\nHello! User from {self.location}, have a blast!\n")
+            f"\nHello! User from {self.location}, have a blast!")
         pass
 
     def setUser(self, zipcode: str):

@@ -1,12 +1,16 @@
 '''
-95-888 Data Focused Python
-Spring 2023 Mini 3
-
 Group 9: AirWise
 Xiao Xu
 xiaoxu@andrew.cmu.edu
 
-ps: oringal project name: ClearAir
+Filename: main.py
+
+First group of import (line 16-22): python built-in modules
+Second group of import (line 24-30): modules requiring additional installaztion 
+Third Group of import (line 32-35): other submitted py files that should be kept in the same dictionary
+
+95-888 Data Focused Python
+Spring 2023 Mini 3
 '''
 
 import os
@@ -82,7 +86,6 @@ def airnowPage(firstBrowser: bool = False):
         aqiIntroTag = airnowPortalBS.find(
             'div', attrs={'class': 'container related-announcements-container pull-left'})
         aqiIntro = aqiIntroTag.text.strip()
-        print('')
         console.para(aqiIntro)
     airnowMenu.content(firstBrowser)
     response = console.prompt(answers=airnowMenu.features, menuNavOn=True)
@@ -94,7 +97,6 @@ def airnowPage(firstBrowser: bool = False):
             currentAQI()
         elif (response == '2'):
             historicAQI()
-            return
         elif (response == '3'):
             currentAQI(anotherCity=True)
         elif (response == '4'):
@@ -459,9 +461,6 @@ if __name__ == "__main__":
     airnowPortalBS = webScraping(airNowGov)
 
     # Deploy
-    # user = prologue()
-    user = ZipCityState('15213')
-    currentAQI()
-    quit()
+    user = prologue()
     homepage(firstBrowser=True)
     plt.close('all')
